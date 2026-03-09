@@ -24,9 +24,9 @@ interface ActivityJpaRepository extends JpaRepository<ActivityEntity, String> {
      */
     @Query("""
             SELECT a FROM ActivityEntity a
-            WHERE (:sport  IS NULL OR LOWER(a.sport)  = LOWER(:sport))
-              AND (:city   IS NULL OR LOWER(a.city)   = LOWER(:city))
-              AND (:status IS NULL OR a.status         = :status)
+            WHERE (:sport  IS NULL OR LOWER(a.sport) = :sport)
+              AND (:city   IS NULL OR LOWER(a.city)  = :city)
+              AND (:status IS NULL OR a.status        = :status)
             ORDER BY a.scheduledAt ASC
             """)
     List<ActivityEntity> search(

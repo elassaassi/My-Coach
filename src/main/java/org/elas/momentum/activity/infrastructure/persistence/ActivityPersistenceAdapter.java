@@ -32,8 +32,8 @@ class ActivityPersistenceAdapter implements ActivityRepository {
     public List<Activity> search(String sport, String city, String status, int page, int size) {
         var pageable = PageRequest.of(page, size);
         return jpaRepository.search(
-                        blankToNull(sport),
-                        blankToNull(city),
+                        lower(sport),
+                        lower(city),
                         blankToNull(status),
                         pageable)
                 .stream()
@@ -57,5 +57,9 @@ class ActivityPersistenceAdapter implements ActivityRepository {
 
     private static String blankToNull(String s) {
         return (s == null || s.isBlank()) ? null : s;
+    }
+
+    private static String lower(String s) {
+        return (s == null || s.isBlank()) ? null : s.toLowerCase();
     }
 }
