@@ -41,6 +41,24 @@ public class User {
         return user;
     }
 
+    // ── Factory : inscription via OAuth2 social login ────────────────────────
+
+    /**
+     * Crée un compte utilisateur via OAuth2 (Google, Facebook...).
+     * L'identité étant vérifiée par le provider, le compte est directement ACTIVE.
+     * Aucun mot de passe utilisable n'est stocké — connexion OAuth2 uniquement.
+     */
+    public static User registerViaOAuth(Email email, String firstName, String lastName) {
+        Objects.requireNonNull(email);
+        Objects.requireNonNull(firstName);
+        Objects.requireNonNull(lastName);
+
+        var user = new User(UserId.generate(), email, "OAUTH2:NO_PASSWORD_HASH", firstName, lastName);
+        user.activate(); // identité vérifiée par le provider OAuth2
+        user.domainEvents.add(UserRegisteredEvent.of(user.id, user.email, user.firstName, user.lastName));
+        return user;
+    }
+
     // ── Factory : reconstitution depuis persistance ───────────────────────────
 
     public static User reconstitute(UserId id, Email email, String passwordHash,

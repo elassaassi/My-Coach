@@ -6,23 +6,19 @@ import org.elas.momentum.user.domain.model.Email;
 import org.elas.momentum.user.domain.model.User;
 import org.elas.momentum.user.domain.model.UserId;
 import org.elas.momentum.user.domain.port.out.UserRepository;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 @Transactional(readOnly = true)
 public class UserModuleAPIImpl implements UserModuleAPI {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
 
-    public UserModuleAPIImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserModuleAPIImpl(UserRepository userRepository) {
         this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -61,11 +57,11 @@ public class UserModuleAPIImpl implements UserModuleAPI {
         return userRepository.findByEmail(Email.of(email))
                 .map(u -> u.getId().value())
                 .orElseGet(() -> {
-                    // Crée un compte avec un mot de passe aléatoire (l'utilisateur se connectera via OAuth2)
-                    String randomPassword = passwordEncoder.encode(UUID.randomUUID().toString());
-                    User user = User.register(Email.of(email), randomPassword,
+                    User user = User.registerViaOAuth(
+                            Email.of(email),
                             firstName.isBlank() ? "Utilisateur" : firstName,
-                            lastName.isBlank() ? "" : lastName);
+                            lastName.isBlank() ? "" : lastName
+                    );
                     return userRepository.save(user).getId().value();
                 });
     }
