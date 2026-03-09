@@ -1,0 +1,14 @@
+replicaCount: 1
+
+image:
+  repository: registry.momentum.app/momentum-app
+  tag: "latest"
+
+ingress:
+  enabled: true
+  host: recette.momentum.app
+  tls: false
+
+env:
+  SPRING_PROFILES_ACTIVE: recette
+  KEYCLOAK_ISSUER_URI: http://keycloak-recette:8080/realms/momentum

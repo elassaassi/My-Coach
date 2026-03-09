@@ -1,0 +1,52 @@
+replicaCount: 1
+
+image:
+  repository: momentum-app
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+ingress:
+  enabled: false
+  className: "nginx"
+  host: momentum.local
+  tls: false
+
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "250m"
+  limits:
+    memory: "1Gi"
+    cpu: "500m"
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+
+env:
+  SPRING_PROFILES_ACTIVE: default
+  SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/momentum
+  SPRING_DATASOURCE_USERNAME: momentum
+  SPRING_REDIS_HOST: redis
+  SPRING_REDIS_PORT: "6379"
+
+envSecrets:
+  JWT_SECRET: ""
+  SPRING_DATASOURCE_PASSWORD: ""
+
+postgresql:
+  enabled: true
+  image: postgres:16-alpine
+  database: momentum
+  username: momentum
+
+redis:
+  enabled: true
+  image: redis:7-alpine

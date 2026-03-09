@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: momentum-config
+  namespace: momentum
+data:
+  SPRING_PROFILES_ACTIVE: "prod"
+  SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-svc:5432/momentum"
+  SPRING_REDIS_HOST: "redis-svc"
+  SPRING_REDIS_PORT: "6379"

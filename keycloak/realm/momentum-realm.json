@@ -1,0 +1,63 @@
+{
+  "realm": "momentum",
+  "enabled": true,
+  "displayName": "Momentum Sports",
+  "sslRequired": "external",
+  "registrationAllowed": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "clients": [
+    {
+      "clientId": "momentum-backend",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "bearerOnly": true,
+      "publicClient": false
+    },
+    {
+      "clientId": "momentum-frontend",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": ["http://localhost:3000/*", "https://momentum.app/*"],
+      "webOrigins": ["http://localhost:3000", "https://momentum.app"]
+    }
+  ],
+  "roles": {
+    "realm": [
+      { "name": "user", "description": "Regular user" },
+      { "name": "coach", "description": "Coach role" },
+      { "name": "recruiter", "description": "Recruiter / scout role" },
+      { "name": "admin", "description": "Platform administrator" }
+    ]
+  },
+  "identityProviders": [
+    {
+      "alias": "google",
+      "providerId": "google",
+      "enabled": true,
+      "trustEmail": true,
+      "config": {
+        "clientId": "${GOOGLE_CLIENT_ID}",
+        "clientSecret": "${GOOGLE_CLIENT_SECRET}",
+        "defaultScope": "openid email profile"
+      }
+    },
+    {
+      "alias": "facebook",
+      "providerId": "facebook",
+      "enabled": true,
+      "trustEmail": false,
+      "config": {
+        "clientId": "${FACEBOOK_APP_ID}",
+        "clientSecret": "${FACEBOOK_APP_SECRET}",
+        "defaultScope": "email,public_profile"
+      }
+    }
+  ],
+  "defaultRoles": ["user"]
+}

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+    <!-- Suppress false positives for test dependencies -->
+    <suppress>
+        <notes>H2 in-memory DB used only for tests</notes>
+        <gav regex="true">^com\.h2database:h2:.*$</gav>
+        <cvssBelow>10</cvssBelow>
+    </suppress>
+</suppressions>

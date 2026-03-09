@@ -1,0 +1,13 @@
+# Profile activé via -Dspring.profiles.active=keycloak
+# Remplace JWT maison par Keycloak OIDC Resource Server
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/momentum}
+
+momentum:
+  keycloak:
+    enabled: true

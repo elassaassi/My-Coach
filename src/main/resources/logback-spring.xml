@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- ── Console appender (all profiles) ─────────────────────────────────── -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %cyan(%logger{36}) - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ── JSON appender for Logstash (prod profile) ────────────────────────── -->
+    <springProfile name="prod">
+        <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+            <destination>${LOGSTASH_HOST:localhost}:5000</destination>
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <includeMdcKeyNames>traceId</includeMdcKeyNames>
+                <includeMdcKeyNames>spanId</includeMdcKeyNames>
+                <includeMdcKeyNames>userId</includeMdcKeyNames>
+                <includeMdcKeyNames>module</includeMdcKeyNames>
+                <customFields>{"application":"momentum","environment":"prod"}</customFields>
+            </encoder>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="LOGSTASH"/>
+        </root>
+    </springProfile>
+
+    <!-- ── Default profile (console only) ──────────────────────────────────── -->
+    <springProfile name="!prod">
+        <logger name="org.elas.momentum" level="DEBUG"/>
+        <logger name="org.springframework.security" level="WARN"/>
+        <logger name="org.flywaydb" level="INFO"/>
+        <logger name="org.hibernate.SQL" level="WARN"/>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+</configuration>
