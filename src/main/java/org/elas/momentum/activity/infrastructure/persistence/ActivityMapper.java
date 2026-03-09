@@ -11,7 +11,9 @@ public final class ActivityMapper {
     private ActivityMapper() {}
 
     public static Activity toDomain(ActivityEntity e) {
-        var location = new Location(e.getLatitude(), e.getLongitude(),
+        var location = new Location(
+                e.getLatitude(),
+                e.getLongitude(),
                 e.getAddress() != null ? e.getAddress() : "",
                 e.getCity(),
                 e.getCountry() != null ? e.getCountry() : "");
@@ -47,7 +49,7 @@ public final class ActivityMapper {
         e.setRequiredLevel(a.getRequiredLevel());
         e.setLatitude(a.getLocation().latitude());
         e.setLongitude(a.getLocation().longitude());
-        e.setAddress(a.getLocation().address());
+        e.setAddress(a.getLocation().venueName());   // venueName → address column (no migration needed)
         e.setCity(a.getLocation().city());
         e.setCountry(a.getLocation().country());
         e.setScheduledAt(a.getScheduledAt());
@@ -74,6 +76,14 @@ public final class ActivityMapper {
                 .map(p -> new ActivityResult.ParticipantDto(p.userId(), p.joinedAt()))
                 .toList();
 
+        var location = new ActivityResult.LocationDto(
+                a.getLocation().latitude(),
+                a.getLocation().longitude(),
+                a.getLocation().venueName(),
+                a.getLocation().city(),
+                a.getLocation().country()
+        );
+
         return new ActivityResult(
                 a.getId().value(),
                 a.getOrganizerId(),
@@ -81,11 +91,7 @@ public final class ActivityMapper {
                 a.getDescription(),
                 a.getSport(),
                 a.getRequiredLevel(),
-                a.getLocation().latitude(),
-                a.getLocation().longitude(),
-                a.getLocation().address(),
-                a.getLocation().city(),
-                a.getLocation().country(),
+                location,
                 a.getScheduledAt(),
                 a.getMaxParticipants(),
                 a.getCurrentParticipantsCount(),

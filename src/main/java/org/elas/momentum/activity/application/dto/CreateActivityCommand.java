@@ -18,7 +18,7 @@ public record CreateActivityCommand(
         @Min(-90) @Max(90) double latitude,
         @Min(-180) @Max(180) double longitude,
         @NotBlank(message = "Ville obligatoire") String city,
-        String address,
+        String venueName,
         String country,
 
         @NotNull(message = "Date/heure obligatoire")

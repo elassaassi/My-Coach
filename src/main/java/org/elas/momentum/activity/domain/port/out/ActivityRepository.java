@@ -10,7 +10,7 @@ import java.util.Optional;
 public interface ActivityRepository {
     Activity save(Activity activity);
     Optional<Activity> findById(ActivityId id);
-    List<Activity> findByStatus(ActivityStatus status);
+    List<Activity> search(String sport, String city, String status, int page, int size);
     List<Activity> findByOrganizerId(String organizerId);
     List<Activity> findByParticipantId(String userId);
 }

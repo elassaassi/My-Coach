@@ -3,11 +3,9 @@ package org.elas.momentum.activity.application.usecase;
 import org.elas.momentum.activity.application.dto.ActivityResult;
 import org.elas.momentum.activity.domain.exception.ActivityNotFoundException;
 import org.elas.momentum.activity.domain.model.ActivityId;
-import org.elas.momentum.activity.domain.model.ActivityStatus;
 import org.elas.momentum.activity.domain.port.in.GetActivityUseCase;
 import org.elas.momentum.activity.domain.port.out.ActivityRepository;
 import org.elas.momentum.activity.infrastructure.persistence.ActivityMapper;
-import org.elas.momentum.shared.domain.GeoUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,21 +29,15 @@ public class GetActivityService implements GetActivityUseCase {
     }
 
     @Override
-    public List<ActivityResult> getOpenBySport(String sport, double lat, double lon, int radiusKm) {
-        return repository.findByStatus(ActivityStatus.OPEN).stream()
-                .filter(a -> a.getSport().equalsIgnoreCase(sport))
-                .filter(a -> {
-                    double dist = GeoUtils.haversineKm(
-                            lat, lon, a.getLocation().latitude(), a.getLocation().longitude());
-                    return dist <= radiusKm;
-                })
+    public List<ActivityResult> search(String sport, String city, String status, int page, int size) {
+        return repository.search(sport, city, status, page, size).stream()
                 .map(ActivityMapper::toResult)
                 .toList();
     }
 
     @Override
     public List<ActivityResult> getByUser(String userId) {
-        var asOrganizer = repository.findByOrganizerId(userId);
+        var asOrganizer   = repository.findByOrganizerId(userId);
         var asParticipant = repository.findByParticipantId(userId);
 
         return java.util.stream.Stream.concat(asOrganizer.stream(), asParticipant.stream())

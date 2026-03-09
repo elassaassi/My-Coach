@@ -6,6 +6,6 @@ import java.util.List;
 
 public interface GetActivityUseCase {
     ActivityResult getById(String activityId);
-    List<ActivityResult> getOpenBySport(String sport, double lat, double lon, int radiusKm);
+    List<ActivityResult> search(String sport, String city, String status, int page, int size);
     List<ActivityResult> getByUser(String userId);
 }

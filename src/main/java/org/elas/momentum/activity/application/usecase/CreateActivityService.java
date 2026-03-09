@@ -25,7 +25,7 @@ public class CreateActivityService implements CreateActivityUseCase {
         var location = new Location(
                 command.latitude(),
                 command.longitude(),
-                command.address() != null ? command.address() : "",
+                command.venueName() != null ? command.venueName() : "",
                 command.city(),
                 command.country() != null ? command.country() : ""
         );

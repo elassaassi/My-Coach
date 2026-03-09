@@ -2,8 +2,8 @@ package org.elas.momentum.activity.infrastructure.persistence;
 
 import org.elas.momentum.activity.domain.model.Activity;
 import org.elas.momentum.activity.domain.model.ActivityId;
-import org.elas.momentum.activity.domain.model.ActivityStatus;
 import org.elas.momentum.activity.domain.port.out.ActivityRepository;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -29,8 +29,14 @@ class ActivityPersistenceAdapter implements ActivityRepository {
     }
 
     @Override
-    public List<Activity> findByStatus(ActivityStatus status) {
-        return jpaRepository.findByStatus(status.name()).stream()
+    public List<Activity> search(String sport, String city, String status, int page, int size) {
+        var pageable = PageRequest.of(page, size);
+        return jpaRepository.search(
+                        blankToNull(sport),
+                        blankToNull(city),
+                        blankToNull(status),
+                        pageable)
+                .stream()
                 .map(ActivityMapper::toDomain)
                 .toList();
     }
@@ -47,5 +53,9 @@ class ActivityPersistenceAdapter implements ActivityRepository {
         return jpaRepository.findByParticipantUserId(userId).stream()
                 .map(ActivityMapper::toDomain)
                 .toList();
+    }
+
+    private static String blankToNull(String s) {
+        return (s == null || s.isBlank()) ? null : s;
     }
 }

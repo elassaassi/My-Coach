@@ -22,15 +22,15 @@ import java.util.List;
 public class ActivityController {
 
     private final CreateActivityUseCase createActivityUseCase;
-    private final JoinActivityUseCase joinActivityUseCase;
-    private final GetActivityUseCase getActivityUseCase;
+    private final JoinActivityUseCase   joinActivityUseCase;
+    private final GetActivityUseCase    getActivityUseCase;
 
     public ActivityController(CreateActivityUseCase createActivityUseCase,
                               JoinActivityUseCase joinActivityUseCase,
                               GetActivityUseCase getActivityUseCase) {
         this.createActivityUseCase = createActivityUseCase;
-        this.joinActivityUseCase = joinActivityUseCase;
-        this.getActivityUseCase = getActivityUseCase;
+        this.joinActivityUseCase   = joinActivityUseCase;
+        this.getActivityUseCase    = getActivityUseCase;
     }
 
     @PostMapping
@@ -49,16 +49,25 @@ public class ActivityController {
         return ResponseEntity.ok(ApiResponse.ok(getActivityUseCase.getById(activityId)));
     }
 
+    /**
+     * Recherche flexible — tous les paramètres sont optionnels.
+     * Exemples :
+     *   GET /search                          → toutes les activités OPEN (défaut)
+     *   GET /search?sport=football           → football OPEN
+     *   GET /search?city=Casablanca&status=OPEN
+     *   GET /search?sport=tennis&city=Rabat&status=OPEN&page=0&size=20
+     */
     @GetMapping("/search")
-    @Operation(summary = "Rechercher des sessions ouvertes par sport et localisation")
+    @Operation(summary = "Rechercher des sessions (sport, ville, statut)")
     public ResponseEntity<ApiResponse<List<ActivityResult>>> search(
-            @RequestParam String sport,
-            @RequestParam double lat,
-            @RequestParam double lon,
-            @RequestParam(defaultValue = "20") int radiusKm) {
+            @RequestParam(required = false) String sport,
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false, defaultValue = "OPEN") String status,
+            @RequestParam(defaultValue = "0")  int page,
+            @RequestParam(defaultValue = "20") int size) {
 
         return ResponseEntity.ok(ApiResponse.ok(
-                getActivityUseCase.getOpenBySport(sport, lat, lon, radiusKm)));
+                getActivityUseCase.search(sport, city, status, page, size)));
     }
 
     @GetMapping("/me")

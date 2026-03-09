@@ -5,7 +5,7 @@ import java.util.Objects;
 public record Location(
         double latitude,
         double longitude,
-        String address,
+        String venueName,
         String city,
         String country
 ) {

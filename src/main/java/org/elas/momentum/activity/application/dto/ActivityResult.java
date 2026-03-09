@@ -10,17 +10,21 @@ public record ActivityResult(
         String description,
         String sport,
         String requiredLevel,
-        double latitude,
-        double longitude,
-        String address,
-        String city,
-        String country,
+        LocationDto location,
         Instant scheduledAt,
         int maxParticipants,
-        int currentParticipants,
+        int currentParticipantsCount,
         String status,
         List<ParticipantDto> participants,
         Instant createdAt
 ) {
+    public record LocationDto(
+            double latitude,
+            double longitude,
+            String venueName,
+            String city,
+            String country
+    ) {}
+
     public record ParticipantDto(String userId, Instant joinedAt) {}
 }
