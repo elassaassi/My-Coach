@@ -38,9 +38,6 @@ public class HighlightController {
     @Value("${momentum.upload.dir:./uploads}")
     private String uploadDir;
 
-    @Value("${momentum.upload.base-url:http://localhost:8080/uploads}")
-    private String uploadBaseUrl;
-
     public HighlightController(PublishHighlightUseCase publishHighlightUseCase,
                                LikeHighlightUseCase likeHighlightUseCase,
                                GetHighlightOfDayUseCase getHighlightOfDayUseCase,
@@ -128,7 +125,7 @@ public class HighlightController {
         Files.createDirectories(dir);
         Files.copy(file.getInputStream(), dir.resolve(filename));
 
-        return ResponseEntity.ok(ApiResponse.ok(Map.of("url", uploadBaseUrl + "/" + filename)));
+        return ResponseEntity.ok(ApiResponse.ok(Map.of("url", "/uploads/" + filename)));
     }
 
     // ── Request records ───────────────────────────────────────────────────────
