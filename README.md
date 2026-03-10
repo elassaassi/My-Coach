@@ -66,6 +66,8 @@ module/
 
 ### Prérequis
 
+
+
 - Docker Desktop
 - Java 25+ (`sdk install java 25-open`)
 - Maven 3.9+
