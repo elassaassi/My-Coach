@@ -7,7 +7,7 @@ import java.time.Instant;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ApiResponse<T>(
         boolean success,
-        T data,
+        @JsonInclude(JsonInclude.Include.ALWAYS) T data,
         String error,
         String code,
         Instant timestamp
