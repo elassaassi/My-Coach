@@ -3,8 +3,11 @@ package org.elas.momentum.activity.infrastructure.web;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.elas.momentum.activity.application.dto.ActivityMessageResult;
 import org.elas.momentum.activity.application.dto.ActivityResult;
 import org.elas.momentum.activity.application.dto.CreateActivityCommand;
+import org.elas.momentum.activity.application.dto.SendMessageCommand;
+import org.elas.momentum.activity.application.usecase.ActivityChatService;
 import org.elas.momentum.activity.domain.port.in.CreateActivityUseCase;
 import org.elas.momentum.activity.domain.port.in.GetActivityUseCase;
 import org.elas.momentum.activity.domain.port.in.JoinActivityUseCase;
@@ -24,13 +27,16 @@ public class ActivityController {
     private final CreateActivityUseCase createActivityUseCase;
     private final JoinActivityUseCase   joinActivityUseCase;
     private final GetActivityUseCase    getActivityUseCase;
+    private final ActivityChatService   chatService;
 
     public ActivityController(CreateActivityUseCase createActivityUseCase,
                               JoinActivityUseCase joinActivityUseCase,
-                              GetActivityUseCase getActivityUseCase) {
+                              GetActivityUseCase getActivityUseCase,
+                              ActivityChatService chatService) {
         this.createActivityUseCase = createActivityUseCase;
         this.joinActivityUseCase   = joinActivityUseCase;
         this.getActivityUseCase    = getActivityUseCase;
+        this.chatService           = chatService;
     }
 
     @PostMapping
@@ -94,5 +100,27 @@ public class ActivityController {
             @AuthenticationPrincipal String userId) {
 
         return ResponseEntity.ok(ApiResponse.ok(joinActivityUseCase.leave(activityId, userId)));
+    }
+
+    // ── Chat ──────────────────────────────────────────────────────────────────
+
+    @PostMapping("/{activityId}/messages")
+    @Operation(summary = "Envoyer un message dans le chat de la session")
+    public ResponseEntity<ApiResponse<ActivityMessageResult>> sendMessage(
+            @PathVariable String activityId,
+            @AuthenticationPrincipal String userId,
+            @Valid @RequestBody SendMessageCommand command) {
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok(chatService.send(activityId, userId, command)));
+    }
+
+    @GetMapping("/{activityId}/messages")
+    @Operation(summary = "Récupérer les messages du chat (50 derniers)")
+    public ResponseEntity<ApiResponse<List<ActivityMessageResult>>> getMessages(
+            @PathVariable String activityId,
+            @RequestParam(defaultValue = "50") int limit) {
+
+        return ResponseEntity.ok(ApiResponse.ok(chatService.getMessages(activityId, Math.min(limit, 100))));
     }
 }
