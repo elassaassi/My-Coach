@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -34,6 +35,17 @@ public class HighlightController {
         this.likeHighlightUseCase = likeHighlightUseCase;
         this.getHighlightOfDayUseCase = getHighlightOfDayUseCase;
         this.highlightRepository = highlightRepository;
+    }
+
+    @GetMapping
+    @Operation(summary = "Feed des highlights (triés par likes et récence)")
+    public ResponseEntity<ApiResponse<List<HighlightResponse>>> getFeed(
+            @RequestParam(defaultValue = "30") int limit) {
+        var highlights = highlightRepository.findTopByLikesAndRecency(Math.min(limit, 100))
+                .stream()
+                .map(HighlightResponse::from)
+                .toList();
+        return ResponseEntity.ok(ApiResponse.ok(highlights));
     }
 
     @PostMapping
