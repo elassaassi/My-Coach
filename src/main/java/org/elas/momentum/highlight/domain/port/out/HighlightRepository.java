@@ -12,4 +12,6 @@ public interface HighlightRepository {
     Optional<Highlight> findById(String id);
 
     List<Highlight> findTopByLikesAndRecency(int limit);
+
+    void deleteById(String id);
 }

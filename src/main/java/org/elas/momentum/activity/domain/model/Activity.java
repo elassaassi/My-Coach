@@ -39,11 +39,10 @@ public class Activity {
         Objects.requireNonNull(scheduledAt);
         if (maxParticipants < 2) throw new IllegalArgumentException("An activity needs at least 2 participants");
 
-        var a = new Activity(ActivityId.generate(), organizerId, title, sport,
+        return new Activity(ActivityId.generate(), organizerId, title, sport,
                 requiredLevel, location, scheduledAt, maxParticipants,
                 ActivityStatus.OPEN, List.of(Participant.of(organizerId)),
                 Instant.now(), Instant.now());
-        return a;
     }
 
     // ── Factory : reconstitution depuis persistance (bypass des règles métier) ──
@@ -93,6 +92,8 @@ public class Activity {
             throw new IllegalStateException("Activity is not open for joining");
         }
 
+
+
         participants.add(Participant.of(userId));
 
         if (participants.size() >= maxParticipants) {
@@ -105,6 +106,7 @@ public class Activity {
         if (!isParticipant(userId)) {
             throw new IllegalStateException("User is not a participant");
         }
+
         if (userId.equals(organizerId)) {
             throw new IllegalStateException("Organizer cannot leave their own activity");
         }

@@ -42,6 +42,11 @@ class HighlightPersistenceAdapter implements HighlightRepository, HighlightOfDay
                 .toList();
     }
 
+    @Override
+    public void deleteById(String id) {
+        highlightJpaRepository.deleteById(id);
+    }
+
     // ── HighlightOfDayRepository ──────────────────────────────────────────────
 
     @Override

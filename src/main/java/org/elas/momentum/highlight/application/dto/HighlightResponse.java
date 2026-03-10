@@ -15,10 +15,15 @@ public record HighlightResponse(
         Double latitude,
         Double longitude,
         int likeCount,
+        int commentCount,
         boolean isHighlightOfDay,
         Instant publishedAt
 ) {
     public static HighlightResponse from(Highlight h) {
+        return from(h, 0);
+    }
+
+    public static HighlightResponse from(Highlight h, int commentCount) {
         return new HighlightResponse(
                 h.getId().value(),
                 h.getPublisherId(),
@@ -29,6 +34,7 @@ public record HighlightResponse(
                 h.getLatitude(),
                 h.getLongitude(),
                 h.getLikeCount(),
+                commentCount,
                 h.isHighlightOfDay(),
                 h.getPublishedAt()
         );
