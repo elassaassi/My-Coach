@@ -25,6 +25,8 @@ public class SecurityConfig {
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
+            // Static file uploads (highlight media)
+            "/uploads/**",
             // OAuth2 social login flows
             "/oauth2/**",
             "/login/oauth2/**"

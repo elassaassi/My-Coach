@@ -41,6 +41,13 @@ spring:
       port: ${REDIS_PORT:6379}
       timeout: 2000ms
 
+  # ── Multipart uploads ────────────────────────────────────────────────────────
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 50MB
+      max-request-size: 55MB
+
   # OAuth2 providers are registered programmatically in OAuth2ClientConfig
   # to allow the app to start even when credentials are not set.
 
@@ -51,6 +58,9 @@ momentum:
     expiration-ms: 86400000   # 24h
   oauth2:
     redirect-uri: ${FRONTEND_URL:http://localhost:4200}/auth/callback
+  upload:
+    dir: ${UPLOAD_DIR:./uploads}
+    base-url: ${UPLOAD_BASE_URL:http://localhost:8080/uploads}
 
 # ── Actuator ──────────────────────────────────────────────────────────────────
 management:

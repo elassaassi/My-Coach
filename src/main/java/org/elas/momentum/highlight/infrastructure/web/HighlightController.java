@@ -9,10 +9,18 @@ import org.elas.momentum.highlight.domain.port.in.LikeHighlightUseCase;
 import org.elas.momentum.highlight.domain.port.in.PublishHighlightUseCase;
 import org.elas.momentum.highlight.domain.port.out.HighlightRepository;
 import org.elas.momentum.shared.web.ApiResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.UUID;
 
 import java.util.List;
 import java.util.Map;
@@ -26,6 +34,12 @@ public class HighlightController {
     private final LikeHighlightUseCase likeHighlightUseCase;
     private final GetHighlightOfDayUseCase getHighlightOfDayUseCase;
     private final HighlightRepository highlightRepository;
+
+    @Value("${momentum.upload.dir:./uploads}")
+    private String uploadDir;
+
+    @Value("${momentum.upload.base-url:http://localhost:8080/uploads}")
+    private String uploadBaseUrl;
 
     public HighlightController(PublishHighlightUseCase publishHighlightUseCase,
                                LikeHighlightUseCase likeHighlightUseCase,
@@ -93,6 +107,28 @@ public class HighlightController {
                 .map(HighlightResponse::from)
                 .orElseThrow(() -> new IllegalArgumentException("Highlight not found: " + id));
         return ResponseEntity.ok(ApiResponse.ok(highlight));
+    }
+
+    @PostMapping(value = "/upload", consumes = "multipart/form-data")
+    @Operation(summary = "Upload une photo ou vidéo pour un highlight")
+    public ResponseEntity<ApiResponse<Map<String, String>>> uploadMedia(
+            @RequestPart("file") MultipartFile file) throws IOException {
+
+        String contentType = file.getContentType();
+        if (contentType == null || (!contentType.startsWith("image/") && !contentType.startsWith("video/"))) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("INVALID_FILE_TYPE", "Seules les images et vidéos sont acceptées"));
+        }
+
+        String original = StringUtils.hasText(file.getOriginalFilename()) ? file.getOriginalFilename() : "file";
+        String ext = original.contains(".") ? original.substring(original.lastIndexOf('.')) : "";
+        String filename = UUID.randomUUID() + ext;
+
+        Path dir = Path.of(uploadDir);
+        Files.createDirectories(dir);
+        Files.copy(file.getInputStream(), dir.resolve(filename));
+
+        return ResponseEntity.ok(ApiResponse.ok(Map.of("url", uploadBaseUrl + "/" + filename)));
     }
 
     // ── Request records ───────────────────────────────────────────────────────
