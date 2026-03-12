@@ -11,6 +11,7 @@ public interface UserModuleAPI {
     boolean exists(String userId);
 
     /**
+     *
      * Trouve un utilisateur par email OAuth2, ou en crée un nouveau.
      * Utilisé par le flux Google / Facebook / Apple.
      *
