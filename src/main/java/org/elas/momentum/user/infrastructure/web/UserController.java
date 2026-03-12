@@ -10,6 +10,7 @@ import org.elas.momentum.user.application.dto.UpdateProfileCommand;
 import org.elas.momentum.user.application.dto.UserResult;
 import org.elas.momentum.user.domain.port.in.GetUserUseCase;
 import org.elas.momentum.user.domain.port.in.RegisterUserUseCase;
+import org.elas.momentum.user.domain.port.in.UpdateAvatarUseCase;
 import org.elas.momentum.user.domain.port.in.UpdateProfileUseCase;
 import org.elas.momentum.user.infrastructure.web.dto.RegisterRequest;
 import org.elas.momentum.user.infrastructure.web.dto.UpdateProfileRequest;
@@ -17,6 +18,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.UUID;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,18 +34,23 @@ import java.util.stream.Collectors;
 @Tag(name = "Users", description = "Gestion des profils utilisateurs")
 public class UserController {
 
+    private static final Path UPLOAD_DIR = Paths.get("uploads/avatars");
+
     private final RegisterUserUseCase registerUserUseCase;
     private final GetUserUseCase getUserUseCase;
     private final UpdateProfileUseCase updateProfileUseCase;
+    private final UpdateAvatarUseCase updateAvatarUseCase;
     private final JwtTokenProvider jwtTokenProvider;
 
     public UserController(RegisterUserUseCase registerUserUseCase,
                           GetUserUseCase getUserUseCase,
                           UpdateProfileUseCase updateProfileUseCase,
+                          UpdateAvatarUseCase updateAvatarUseCase,
                           JwtTokenProvider jwtTokenProvider) {
         this.registerUserUseCase = registerUserUseCase;
         this.getUserUseCase = getUserUseCase;
         this.updateProfileUseCase = updateProfileUseCase;
+        this.updateAvatarUseCase = updateAvatarUseCase;
         this.jwtTokenProvider = jwtTokenProvider;
     }
 
@@ -93,5 +106,27 @@ public class UserController {
         );
 
         return ResponseEntity.ok(ApiResponse.ok(updateProfileUseCase.updateProfile(userId, command)));
+    }
+
+    @PostMapping(value = "/me/avatar", consumes = "multipart/form-data")
+    @Operation(summary = "Upload / mise à jour de la photo de profil")
+    public ResponseEntity<ApiResponse<UserResult>> uploadAvatar(
+            @AuthenticationPrincipal String userId,
+            @RequestParam("file") MultipartFile file) throws IOException {
+
+        Files.createDirectories(UPLOAD_DIR);
+        String ext = getExtension(file.getOriginalFilename());
+        String filename = userId + "_" + UUID.randomUUID() + ext;
+        Files.copy(file.getInputStream(), UPLOAD_DIR.resolve(filename),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+
+        String avatarUrl = "/uploads/avatars/" + filename;
+        return ResponseEntity.ok(ApiResponse.ok(updateAvatarUseCase.updateAvatar(userId, avatarUrl)));
+    }
+
+    private String getExtension(String filename) {
+        if (filename == null) return ".jpg";
+        int dot = filename.lastIndexOf('.');
+        return dot >= 0 ? filename.substring(dot).toLowerCase() : ".jpg";
     }
 }
