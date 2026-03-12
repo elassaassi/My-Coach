@@ -43,6 +43,13 @@ class HighlightPersistenceAdapter implements HighlightRepository, HighlightOfDay
     }
 
     @Override
+    public List<Highlight> findArchivedByPublisherId(String publisherId) {
+        return highlightJpaRepository.findArchivedByPublisherId(publisherId).stream()
+                .map(HighlightMapper::toDomain)
+                .toList();
+    }
+
+    @Override
     public void deleteById(String id) {
         highlightJpaRepository.deleteById(id);
     }

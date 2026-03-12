@@ -2,10 +2,12 @@ package org.elas.momentum.activity.infrastructure.persistence;
 
 import org.elas.momentum.activity.domain.model.Activity;
 import org.elas.momentum.activity.domain.model.ActivityId;
+import org.elas.momentum.activity.domain.model.ActivityStatus;
 import org.elas.momentum.activity.domain.port.out.ActivityRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -22,10 +24,8 @@ class ActivityPersistenceAdapter implements ActivityRepository {
 
     @Override
     public Activity save(Activity activity) {
-        // Try to load the existing entity to preserve participant BIGSERIAL ids.
-        // Without this, toEntity() creates ParticipantEntity without id → Hibernate
-        // tries to INSERT all participants again → unique constraint violation.
-        ActivityEntity existing = jpaRepository.findById(activity.getId().value()).orElse(null);
+        // Load existing entity with participants in one query to preserve BIGSERIAL ids.
+        ActivityEntity existing = jpaRepository.findWithParticipantsById(activity.getId().value()).orElse(null);
 
         if (existing == null) {
             return ActivityMapper.toDomain(jpaRepository.save(ActivityMapper.toEntity(activity)));
@@ -73,13 +73,14 @@ class ActivityPersistenceAdapter implements ActivityRepository {
 
     @Override
     public Optional<Activity> findById(ActivityId id) {
-        return jpaRepository.findById(id.value()).map(ActivityMapper::toDomain);
+        // Use EntityGraph to load participants in a single query (avoids N+1 on detail page)
+        return jpaRepository.findWithParticipantsById(id.value()).map(ActivityMapper::toDomain);
     }
 
     @Override
-    public List<Activity> search(String sport, String city, String status, int page, int size) {
+    public List<Activity> search(String sport, String city, String status, Instant dateFrom, Instant dateTo, int page, int size) {
         var pageable = PageRequest.of(page, size);
-        return jpaRepository.search(lower(sport), lower(city), blankToNull(status), pageable)
+        return jpaRepository.search(lower(sport), lower(city), blankToNull(status), dateFrom, dateTo, pageable)
                 .stream()
                 .map(ActivityMapper::toDomain)
                 .toList();
@@ -95,6 +96,19 @@ class ActivityPersistenceAdapter implements ActivityRepository {
     @Override
     public List<Activity> findByParticipantId(String userId) {
         return jpaRepository.findByParticipantUserId(userId).stream()
+                .map(ActivityMapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public void deleteById(ActivityId id) {
+        jpaRepository.deleteById(id.value());
+    }
+
+    @Override
+    public List<Activity> findByStatusInAndScheduledAtBefore(List<ActivityStatus> statuses, Instant cutoff) {
+        var statusNames = statuses.stream().map(ActivityStatus::name).toList();
+        return jpaRepository.findByStatusInAndScheduledAtBefore(statusNames, cutoff).stream()
                 .map(ActivityMapper::toDomain)
                 .toList();
     }

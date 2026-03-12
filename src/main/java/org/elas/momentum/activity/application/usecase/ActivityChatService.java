@@ -5,6 +5,7 @@ import org.elas.momentum.activity.application.dto.SendMessageCommand;
 import org.elas.momentum.activity.domain.port.in.GetActivityUseCase;
 import org.elas.momentum.activity.infrastructure.persistence.ActivityMessageEntity;
 import org.elas.momentum.activity.infrastructure.persistence.ActivityMessageJpaRepository;
+import org.elas.momentum.user.UserModuleAPI;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
@@ -17,11 +18,14 @@ public class ActivityChatService {
 
     private final ActivityMessageJpaRepository messageRepo;
     private final GetActivityUseCase           getActivityUseCase;
+    private final UserModuleAPI                userModuleAPI;
 
     public ActivityChatService(ActivityMessageJpaRepository messageRepo,
-                               GetActivityUseCase getActivityUseCase) {
-        this.messageRepo       = messageRepo;
+                               GetActivityUseCase getActivityUseCase,
+                               UserModuleAPI userModuleAPI) {
+        this.messageRepo        = messageRepo;
         this.getActivityUseCase = getActivityUseCase;
+        this.userModuleAPI      = userModuleAPI;
     }
 
     public ActivityMessageResult send(String activityId, String senderId, SendMessageCommand cmd) {
@@ -55,6 +59,11 @@ public class ActivityChatService {
     }
 
     private ActivityMessageResult toResult(ActivityMessageEntity e) {
-        return new ActivityMessageResult(e.getId(), e.getActivityId(), e.getSenderId(), e.getContent(), e.getSentAt());
+        var sender = userModuleAPI.findById(e.getSenderId());
+        return new ActivityMessageResult(
+                e.getId(), e.getActivityId(), e.getSenderId(),
+                sender.map(s -> s.firstName()).orElse(null),
+                sender.map(s -> s.lastName()).orElse(null),
+                e.getContent(), e.getSentAt());
     }
 }

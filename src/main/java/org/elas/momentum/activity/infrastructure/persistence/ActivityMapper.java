@@ -73,7 +73,7 @@ public final class ActivityMapper {
 
     public static ActivityResult toResult(Activity a) {
         var participants = a.getParticipants().stream()
-                .map(p -> new ActivityResult.ParticipantDto(p.userId(), p.joinedAt()))
+                .map(p -> new ActivityResult.ParticipantDto(p.userId(), p.joinedAt(), null, null))
                 .toList();
 
         var location = new ActivityResult.LocationDto(

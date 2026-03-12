@@ -6,17 +6,20 @@ import org.elas.momentum.highlight.application.dto.CommentResponse;
 import org.elas.momentum.highlight.application.dto.HighlightResponse;
 import org.elas.momentum.highlight.domain.model.MediaType;
 import org.elas.momentum.highlight.domain.port.in.AddCommentUseCase;
+import org.elas.momentum.highlight.domain.port.in.ArchiveHighlightUseCase;
 import org.elas.momentum.highlight.domain.port.in.DeleteHighlightUseCase;
 import org.elas.momentum.highlight.domain.port.in.GetCommentsUseCase;
 import org.elas.momentum.highlight.domain.port.in.GetHighlightOfDayUseCase;
 import org.elas.momentum.highlight.domain.port.in.LikeHighlightUseCase;
 import org.elas.momentum.highlight.domain.port.in.PublishHighlightUseCase;
+import org.elas.momentum.highlight.domain.port.in.UpdateHighlightUseCase;
 import org.elas.momentum.highlight.domain.port.out.CommentRepository;
 import org.elas.momentum.highlight.domain.port.out.HighlightRepository;
 import org.elas.momentum.shared.web.ApiResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -39,6 +42,8 @@ public class HighlightController {
     private final LikeHighlightUseCase     likeHighlightUseCase;
     private final GetHighlightOfDayUseCase getHighlightOfDayUseCase;
     private final DeleteHighlightUseCase   deleteHighlightUseCase;
+    private final UpdateHighlightUseCase   updateHighlightUseCase;
+    private final ArchiveHighlightUseCase  archiveHighlightUseCase;
     private final AddCommentUseCase        addCommentUseCase;
     private final GetCommentsUseCase       getCommentsUseCase;
     private final HighlightRepository      highlightRepository;
@@ -51,6 +56,8 @@ public class HighlightController {
                                LikeHighlightUseCase likeHighlightUseCase,
                                GetHighlightOfDayUseCase getHighlightOfDayUseCase,
                                DeleteHighlightUseCase deleteHighlightUseCase,
+                               UpdateHighlightUseCase updateHighlightUseCase,
+                               ArchiveHighlightUseCase archiveHighlightUseCase,
                                AddCommentUseCase addCommentUseCase,
                                GetCommentsUseCase getCommentsUseCase,
                                HighlightRepository highlightRepository,
@@ -59,6 +66,8 @@ public class HighlightController {
         this.likeHighlightUseCase     = likeHighlightUseCase;
         this.getHighlightOfDayUseCase = getHighlightOfDayUseCase;
         this.deleteHighlightUseCase   = deleteHighlightUseCase;
+        this.updateHighlightUseCase   = updateHighlightUseCase;
+        this.archiveHighlightUseCase  = archiveHighlightUseCase;
         this.addCommentUseCase        = addCommentUseCase;
         this.getCommentsUseCase       = getCommentsUseCase;
         this.highlightRepository      = highlightRepository;
@@ -125,12 +134,53 @@ public class HighlightController {
         return ResponseEntity.ok(ApiResponse.ok(highlight));
     }
 
+    @PatchMapping("/{id}")
+    @Operation(summary = "Modifier la légende ou le sport d'un highlight")
+    public ResponseEntity<ApiResponse<Void>> updateHighlight(
+            @PathVariable String id,
+            @AuthenticationPrincipal String userId,
+            Authentication authentication,
+            @RequestBody UpdateRequest request) {
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        updateHighlightUseCase.update(new UpdateHighlightUseCase.Command(id, userId, isAdmin,
+                request.caption(), request.sport()));
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @PatchMapping("/{id}/archive")
+    @Operation(summary = "Archiver ou désarchiver un highlight")
+    public ResponseEntity<ApiResponse<Void>> archiveHighlight(
+            @PathVariable String id,
+            @AuthenticationPrincipal String userId,
+            Authentication authentication,
+            @RequestBody ArchiveRequest request) {
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        archiveHighlightUseCase.archive(new ArchiveHighlightUseCase.Command(id, userId, isAdmin,
+                request.archive()));
+        return ResponseEntity.ok(ApiResponse.ok(null));
+    }
+
+    @GetMapping("/archived")
+    @Operation(summary = "Publications archivées de l'utilisateur connecté")
+    public ResponseEntity<ApiResponse<List<HighlightResponse>>> getArchived(
+            @AuthenticationPrincipal String userId) {
+        var list = highlightRepository.findArchivedByPublisherId(userId).stream()
+                .map(HighlightResponse::from)
+                .toList();
+        return ResponseEntity.ok(ApiResponse.ok(list));
+    }
+
     @DeleteMapping("/{id}")
-    @Operation(summary = "Supprimer son propre highlight")
+    @Operation(summary = "Supprimer un highlight (créateur ou administrateur)")
     public ResponseEntity<ApiResponse<Void>> deleteHighlight(
             @PathVariable String id,
-            @AuthenticationPrincipal String userId) {
-        deleteHighlightUseCase.delete(id, userId);
+            @AuthenticationPrincipal String userId,
+            Authentication authentication) {
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        deleteHighlightUseCase.delete(id, userId, isAdmin);
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 
@@ -167,14 +217,43 @@ public class HighlightController {
                     .body(ApiResponse.error("INVALID_FILE_TYPE", "Seules les images et vidéos sont acceptées"));
         }
 
-        String original = StringUtils.hasText(file.getOriginalFilename()) ? file.getOriginalFilename() : "file";
-        String ext = original.contains(".") ? original.substring(original.lastIndexOf('.')) : "";
-        String filename = UUID.randomUUID() + ext;
-
         Path dir = Path.of(uploadDir);
         Files.createDirectories(dir);
-        Files.copy(file.getInputStream(), dir.resolve(filename));
 
+        String original = StringUtils.hasText(file.getOriginalFilename()) ? file.getOriginalFilename() : "file";
+        String origExt  = original.contains(".") ? original.substring(original.lastIndexOf('.')).toLowerCase() : "";
+
+        if (contentType.startsWith("video/")) {
+            // Transcode to MP4 to ensure audio works in all browsers (MOV/AVI/etc.)
+            String finalName = UUID.randomUUID() + ".mp4";
+            Path   tmpPath   = dir.resolve(UUID.randomUUID() + origExt);
+            Files.copy(file.getInputStream(), tmpPath);
+            try {
+                Path outPath = dir.resolve(finalName);
+                int  exit    = new ProcessBuilder(
+                        "ffmpeg", "-y", "-i", tmpPath.toString(),
+                        "-c:v", "libx264", "-c:a", "aac",
+                        "-movflags", "+faststart",
+                        outPath.toString())
+                        .redirectErrorStream(true)
+                        .start()
+                        .waitFor();
+                Files.deleteIfExists(tmpPath);
+                if (exit == 0) {
+                    return ResponseEntity.ok(ApiResponse.ok(Map.of("url", "/uploads/" + finalName)));
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } catch (Exception ignored) { /* ffmpeg absent — fallback */ }
+            // Fallback: save original if ffmpeg not available
+            String fallbackName = UUID.randomUUID() + origExt;
+            Files.move(tmpPath, dir.resolve(fallbackName));
+            return ResponseEntity.ok(ApiResponse.ok(Map.of("url", "/uploads/" + fallbackName)));
+        }
+
+        // Image: save as-is
+        String filename = UUID.randomUUID() + origExt;
+        Files.copy(file.getInputStream(), dir.resolve(filename));
         return ResponseEntity.ok(ApiResponse.ok(Map.of("url", "/uploads/" + filename)));
     }
 
@@ -183,4 +262,6 @@ public class HighlightController {
     record PublishRequest(String mediaUrl, MediaType mediaType, String caption, String sport) {}
     record LikeRequest(boolean liked) {}
     record CommentRequest(String content) {}
+    record UpdateRequest(String caption, String sport) {}
+    record ArchiveRequest(boolean archive) {}
 }

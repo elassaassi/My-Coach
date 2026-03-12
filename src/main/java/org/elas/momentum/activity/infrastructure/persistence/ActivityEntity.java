@@ -8,6 +8,10 @@ import java.util.List;
 
 @Entity
 @Table(name = "activities", schema = "activities")
+@NamedEntityGraph(
+    name = "Activity.withParticipants",
+    attributeNodes = @NamedAttributeNode("participants")
+)
 public class ActivityEntity {
 
     @Id
@@ -52,7 +56,7 @@ public class ActivityEntity {
     @Column(name = "status", nullable = false)
     private String status;
 
-    @OneToMany(mappedBy = "activity", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "activity", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ParticipantEntity> participants = new ArrayList<>();
 
     @Column(name = "created_at", nullable = false, updatable = false)

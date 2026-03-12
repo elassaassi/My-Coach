@@ -17,10 +17,10 @@ public class DeleteHighlightService implements DeleteHighlightUseCase {
     }
 
     @Override
-    public void delete(String highlightId, String requesterId) {
+    public void delete(String highlightId, String requesterId, boolean isAdmin) {
         var highlight = highlightRepository.findById(highlightId)
                 .orElseThrow(() -> new NotFoundException("Highlight", highlightId));
-        if (!highlight.getPublisherId().equals(requesterId)) {
+        if (!isAdmin && !highlight.getPublisherId().equals(requesterId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not your highlight");
         }
         highlightRepository.deleteById(highlightId);

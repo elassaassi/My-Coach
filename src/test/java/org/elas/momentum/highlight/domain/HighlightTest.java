@@ -102,7 +102,9 @@ class HighlightTest {
                 -7.61,
                 42,
                 true,
-                publishedAt
+                publishedAt,
+                null,
+                null
         );
 
         assertThat(h.getId()).isEqualTo(id);

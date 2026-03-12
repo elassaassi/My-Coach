@@ -13,5 +13,7 @@ public interface HighlightRepository {
 
     List<Highlight> findTopByLikesAndRecency(int limit);
 
+    List<Highlight> findArchivedByPublisherId(String publisherId);
+
     void deleteById(String id);
 }

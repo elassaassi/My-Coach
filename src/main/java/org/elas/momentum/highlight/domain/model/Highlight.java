@@ -19,6 +19,8 @@ public class Highlight {
     private int likeCount;
     private boolean isHighlightOfDay;
     private final Instant publishedAt;
+    private Instant archivedAt;
+    private Instant editedAt;
 
     // ── Factory : création ────────────────────────────────────────────────────
 
@@ -50,11 +52,15 @@ public class Highlight {
     public static Highlight reconstitute(HighlightId id, String publisherId, String mediaUrl,
                                          MediaType mediaType, String caption, String sport,
                                          Double latitude, Double longitude, int likeCount,
-                                         boolean isHighlightOfDay, Instant publishedAt) {
+                                         boolean isHighlightOfDay, Instant publishedAt,
+                                         Instant archivedAt, Instant editedAt) {
         Objects.requireNonNull(id, "id must not be null");
         Objects.requireNonNull(publisherId, "publisherId must not be null");
-        return new Highlight(id, publisherId, mediaUrl, mediaType, caption, sport,
+        var h = new Highlight(id, publisherId, mediaUrl, mediaType, caption, sport,
                 latitude, longitude, likeCount, isHighlightOfDay, publishedAt);
+        h.archivedAt = archivedAt;
+        h.editedAt   = editedAt;
+        return h;
     }
 
     // ── Constructor interne ───────────────────────────────────────────────────
@@ -89,6 +95,28 @@ public class Highlight {
         this.isHighlightOfDay = true;
     }
 
+    public void updateCaption(String caption) {
+        this.caption  = caption;
+        this.editedAt = Instant.now();
+    }
+
+    public void updateSport(String sport) {
+        this.sport    = sport;
+        this.editedAt = Instant.now();
+    }
+
+    public void archive() {
+        this.archivedAt = Instant.now();
+    }
+
+    public void unarchive() {
+        this.archivedAt = null;
+    }
+
+    public boolean isArchived() {
+        return this.archivedAt != null;
+    }
+
     // ── Getters ──────────────────────────────────────────────────────────────
 
     public HighlightId getId() { return id; }
@@ -102,4 +130,6 @@ public class Highlight {
     public int getLikeCount() { return likeCount; }
     public boolean isHighlightOfDay() { return isHighlightOfDay; }
     public Instant getPublishedAt() { return publishedAt; }
+    public Instant getArchivedAt() { return archivedAt; }
+    public Instant getEditedAt() { return editedAt; }
 }

@@ -107,10 +107,13 @@ public class Activity {
             throw new IllegalStateException("User is not a participant");
         }
 
+
         if (userId.equals(organizerId)) {
             throw new IllegalStateException("Organizer cannot leave their own activity");
         }
-        participants.removeIf(p -> p.userId().equals(userId));
+        participants.removeIf(
+
+                p -> p.userId().equals(userId));
         if (status == ActivityStatus.FULL) {
             status = ActivityStatus.OPEN;
         }
@@ -124,6 +127,8 @@ public class Activity {
         this.status = ActivityStatus.COMPLETED;
         updatedAt = Instant.now();
     }
+
+
 
     public void startOngoing() {
         if (status != ActivityStatus.OPEN && status != ActivityStatus.FULL) {

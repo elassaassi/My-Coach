@@ -41,6 +41,12 @@ public class HighlightEntity {
     @Column(name = "published_at", nullable = false, updatable = false)
     private Instant publishedAt;
 
+    @Column(name = "archived_at")
+    private Instant archivedAt;
+
+    @Column(name = "edited_at")
+    private Instant editedAt;
+
     // ── Getters / Setters ────────────────────────────────────────────────────
 
     public String getId() { return id; }
@@ -65,4 +71,8 @@ public class HighlightEntity {
     public void setHighlightOfDay(boolean highlightOfDay) { isHighlightOfDay = highlightOfDay; }
     public Instant getPublishedAt() { return publishedAt; }
     public void setPublishedAt(Instant publishedAt) { this.publishedAt = publishedAt; }
+    public Instant getArchivedAt() { return archivedAt; }
+    public void setArchivedAt(Instant archivedAt) { this.archivedAt = archivedAt; }
+    public Instant getEditedAt() { return editedAt; }
+    public void setEditedAt(Instant editedAt) { this.editedAt = editedAt; }
 }

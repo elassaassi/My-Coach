@@ -253,6 +253,12 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <!-- Activate 'local' profile by default for ./mvnw spring-boot:run
+                         Loads application-local.yml (Google/Facebook credentials, FRONTEND_URL).
+                         Override: SPRING_PROFILES_ACTIVE=prod ./mvnw spring-boot:run -->
+                    <profiles>local</profiles>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

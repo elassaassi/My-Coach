@@ -8,10 +8,13 @@ import org.elas.momentum.shared.exception.BusinessException;
 import org.elas.momentum.shared.web.ApiResponse;
 import org.elas.momentum.user.AuthenticateUserUseCase;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -20,11 +23,23 @@ public class AuthController {
 
     private final AuthenticateUserUseCase authenticateUserUseCase;
     private final JwtTokenProvider jwtTokenProvider;
+    private final OAuth2ClientConfig.OAuth2Availability oAuth2Availability;
 
     public AuthController(AuthenticateUserUseCase authenticateUserUseCase,
-                          JwtTokenProvider jwtTokenProvider) {
+                          JwtTokenProvider jwtTokenProvider,
+                          OAuth2ClientConfig.OAuth2Availability oAuth2Availability) {
         this.authenticateUserUseCase = authenticateUserUseCase;
-        this.jwtTokenProvider = jwtTokenProvider;
+        this.jwtTokenProvider        = jwtTokenProvider;
+        this.oAuth2Availability      = oAuth2Availability;
+    }
+
+    @GetMapping("/providers")
+    @Operation(summary = "Liste des providers OAuth2 disponibles")
+    public ResponseEntity<ApiResponse<Map<String, Boolean>>> providers() {
+        return ResponseEntity.ok(ApiResponse.ok(Map.of(
+                "google",   oAuth2Availability.googleEnabled(),
+                "facebook", oAuth2Availability.facebookEnabled()
+        )));
     }
 
     @PostMapping("/login")

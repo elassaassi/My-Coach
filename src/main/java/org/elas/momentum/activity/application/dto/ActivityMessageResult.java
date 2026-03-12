@@ -6,6 +6,8 @@ public record ActivityMessageResult(
         String  id,
         String  activityId,
         String  senderId,
+        String  senderFirstName,
+        String  senderLastName,
         String  content,
         Instant sentAt
 ) {}

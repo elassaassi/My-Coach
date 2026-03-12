@@ -17,7 +17,9 @@ public record HighlightResponse(
         int likeCount,
         int commentCount,
         boolean isHighlightOfDay,
-        Instant publishedAt
+        Instant publishedAt,
+        Instant archivedAt,
+        Instant editedAt
 ) {
     public static HighlightResponse from(Highlight h) {
         return from(h, 0);
@@ -36,7 +38,9 @@ public record HighlightResponse(
                 h.getLikeCount(),
                 commentCount,
                 h.isHighlightOfDay(),
-                h.getPublishedAt()
+                h.getPublishedAt(),
+                h.getArchivedAt(),
+                h.getEditedAt()
         );
     }
 }

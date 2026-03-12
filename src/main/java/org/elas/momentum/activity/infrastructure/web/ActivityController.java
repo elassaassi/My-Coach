@@ -8,7 +8,9 @@ import org.elas.momentum.activity.application.dto.ActivityResult;
 import org.elas.momentum.activity.application.dto.CreateActivityCommand;
 import org.elas.momentum.activity.application.dto.SendMessageCommand;
 import org.elas.momentum.activity.application.usecase.ActivityChatService;
+import org.elas.momentum.activity.domain.port.in.CompleteActivityUseCase;
 import org.elas.momentum.activity.domain.port.in.CreateActivityUseCase;
+import org.elas.momentum.activity.domain.port.in.DeleteActivityUseCase;
 import org.elas.momentum.activity.domain.port.in.GetActivityUseCase;
 import org.elas.momentum.activity.domain.port.in.JoinActivityUseCase;
 import org.elas.momentum.shared.web.ApiResponse;
@@ -17,6 +19,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
+
 import java.util.List;
 
 @RestController
@@ -24,19 +28,25 @@ import java.util.List;
 @Tag(name = "Activities", description = "Sessions sportives")
 public class ActivityController {
 
-    private final CreateActivityUseCase createActivityUseCase;
-    private final JoinActivityUseCase   joinActivityUseCase;
-    private final GetActivityUseCase    getActivityUseCase;
-    private final ActivityChatService   chatService;
+    private final CreateActivityUseCase  createActivityUseCase;
+    private final JoinActivityUseCase    joinActivityUseCase;
+    private final GetActivityUseCase     getActivityUseCase;
+    private final ActivityChatService    chatService;
+    private final CompleteActivityUseCase completeActivityUseCase;
+    private final DeleteActivityUseCase  deleteActivityUseCase;
 
     public ActivityController(CreateActivityUseCase createActivityUseCase,
                               JoinActivityUseCase joinActivityUseCase,
                               GetActivityUseCase getActivityUseCase,
-                              ActivityChatService chatService) {
-        this.createActivityUseCase = createActivityUseCase;
-        this.joinActivityUseCase   = joinActivityUseCase;
-        this.getActivityUseCase    = getActivityUseCase;
-        this.chatService           = chatService;
+                              ActivityChatService chatService,
+                              CompleteActivityUseCase completeActivityUseCase,
+                              DeleteActivityUseCase deleteActivityUseCase) {
+        this.createActivityUseCase  = createActivityUseCase;
+        this.joinActivityUseCase    = joinActivityUseCase;
+        this.getActivityUseCase     = getActivityUseCase;
+        this.chatService            = chatService;
+        this.completeActivityUseCase = completeActivityUseCase;
+        this.deleteActivityUseCase   = deleteActivityUseCase;
     }
 
     @PostMapping
@@ -64,16 +74,18 @@ public class ActivityController {
      *   GET /search?sport=tennis&city=Rabat&status=OPEN&page=0&size=20
      */
     @GetMapping("/search")
-    @Operation(summary = "Rechercher des sessions (sport, ville, statut)")
+    @Operation(summary = "Rechercher des sessions (sport, ville, statut, date)")
     public ResponseEntity<ApiResponse<List<ActivityResult>>> search(
             @RequestParam(required = false) String sport,
             @RequestParam(required = false) String city,
-            @RequestParam(required = false, defaultValue = "OPEN") String status,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Instant dateFrom,
+            @RequestParam(required = false) Instant dateTo,
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "20") int size) {
 
         return ResponseEntity.ok(ApiResponse.ok(
-                getActivityUseCase.search(sport, city, status, page, size)));
+                getActivityUseCase.search(sport, city, status, dateFrom, dateTo, page, size)));
     }
 
     @GetMapping("/me")
@@ -100,6 +112,25 @@ public class ActivityController {
             @AuthenticationPrincipal String userId) {
 
         return ResponseEntity.ok(ApiResponse.ok(joinActivityUseCase.leave(activityId, userId)));
+    }
+
+    @DeleteMapping("/{activityId}")
+    @Operation(summary = "Supprimer une session (organisateur uniquement)")
+    public ResponseEntity<Void> delete(
+            @PathVariable String activityId,
+            @AuthenticationPrincipal String userId) {
+
+        deleteActivityUseCase.delete(activityId, userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{activityId}/complete")
+    @Operation(summary = "Marquer une session comme terminée (organisateur uniquement)")
+    public ResponseEntity<ApiResponse<ActivityResult>> complete(
+            @PathVariable String activityId,
+            @AuthenticationPrincipal String userId) {
+
+        return ResponseEntity.ok(ApiResponse.ok(completeActivityUseCase.complete(activityId, userId)));
     }
 
     // ── Chat ──────────────────────────────────────────────────────────────────

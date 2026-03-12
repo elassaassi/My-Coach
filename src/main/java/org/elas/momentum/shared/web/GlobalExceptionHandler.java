@@ -13,6 +13,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.io.IOException;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
@@ -57,6 +58,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleDataIntegrity(DataIntegrityViolationException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ApiResponse.error("CONFLICT", "Tu es déjà inscrit à cette session"));
+    }
+
+    @ExceptionHandler(IOException.class)
+    public ResponseEntity<Void> handleClientAbort(IOException ex) {
+        // Broken pipe: client disconnected during streaming — nothing to do
+        log.debug("Client disconnected: {}", ex.getMessage());
+        return ResponseEntity.ok().build();
     }
 
     @ExceptionHandler(Exception.class)

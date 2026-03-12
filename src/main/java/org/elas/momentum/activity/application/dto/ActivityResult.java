@@ -26,5 +26,5 @@ public record ActivityResult(
             String country
     ) {}
 
-    public record ParticipantDto(String userId, Instant joinedAt) {}
+    public record ParticipantDto(String userId, Instant joinedAt, String firstName, String lastName) {}
 }

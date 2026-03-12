@@ -10,8 +10,16 @@ public interface HighlightJpaRepository extends JpaRepository<HighlightEntity, S
 
     @Query("""
             SELECT h FROM HighlightEntity h
+            WHERE h.archivedAt IS NULL
             ORDER BY h.likeCount DESC, h.publishedAt DESC
             LIMIT :limit
             """)
     List<HighlightEntity> findTopByLikesAndRecency(@Param("limit") int limit);
+
+    @Query("""
+            SELECT h FROM HighlightEntity h
+            WHERE h.publisherId = :publisherId AND h.archivedAt IS NOT NULL
+            ORDER BY h.archivedAt DESC
+            """)
+    List<HighlightEntity> findArchivedByPublisherId(@Param("publisherId") String publisherId);
 }

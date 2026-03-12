@@ -34,18 +34,21 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler;
+    private final OAuth2ClientConfig.OAuth2Availability oAuth2Availability;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
-                          OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler) {
+                          OAuth2AuthenticationSuccessHandler oAuth2SuccessHandler,
+                          OAuth2ClientConfig.OAuth2Availability oAuth2Availability) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-        this.oAuth2SuccessHandler = oAuth2SuccessHandler;
+        this.oAuth2SuccessHandler    = oAuth2SuccessHandler;
+        this.oAuth2Availability      = oAuth2Availability;
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http
+        http
                 .csrf(AbstractHttpConfigurer::disable)
-                // IF_REQUIRED pour que la session OAuth2 state/nonce fonctionne
+                // IF_REQUIRED so OAuth2 state/nonce session works
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .headers(headers -> headers
                         .httpStrictTransportSecurity(hsts -> hsts
@@ -61,14 +64,18 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated()
                 )
-                // ── OAuth2 Social Login ───────────────────────────────────────────────
-                .oauth2Login(oauth2 -> oauth2
-                        .successHandler(oAuth2SuccessHandler)
-                        .failureUrl("http://localhost:4200/auth/login?error=oauth2")
-                )
                 .addFilterBefore(new RateLimitFilter(), UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .build();
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+        // ── OAuth2 Social Login — only when at least one provider is configured ──
+        if (oAuth2Availability.anyEnabled()) {
+            http.oauth2Login(oauth2 -> oauth2
+                    .successHandler(oAuth2SuccessHandler)
+                    .failureUrl("http://localhost:4200/auth/login?error=oauth2")
+            );
+        }
+
+        return http.build();
     }
 
 }

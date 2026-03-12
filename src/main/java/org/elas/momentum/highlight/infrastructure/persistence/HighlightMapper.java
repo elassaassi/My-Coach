@@ -21,7 +21,9 @@ final class HighlightMapper {
                 e.getLongitude(),
                 e.getLikeCount(),
                 e.isHighlightOfDay(),
-                e.getPublishedAt()
+                e.getPublishedAt(),
+                e.getArchivedAt(),
+                e.getEditedAt()
         );
     }
 
@@ -38,6 +40,8 @@ final class HighlightMapper {
         e.setLikeCount(h.getLikeCount());
         e.setHighlightOfDay(h.isHighlightOfDay());
         e.setPublishedAt(h.getPublishedAt());
+        e.setArchivedAt(h.getArchivedAt());
+        e.setEditedAt(h.getEditedAt());
         return e;
     }
 
