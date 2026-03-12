@@ -3,6 +3,7 @@ package org.elas.momentum.user.infrastructure.web;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.elas.momentum.config.JwtTokenProvider;
 import org.elas.momentum.shared.web.ApiResponse;
 import org.elas.momentum.user.application.dto.RegisterUserCommand;
 import org.elas.momentum.user.application.dto.UpdateProfileCommand;
@@ -28,18 +29,23 @@ public class UserController {
     private final RegisterUserUseCase registerUserUseCase;
     private final GetUserUseCase getUserUseCase;
     private final UpdateProfileUseCase updateProfileUseCase;
+    private final JwtTokenProvider jwtTokenProvider;
 
     public UserController(RegisterUserUseCase registerUserUseCase,
                           GetUserUseCase getUserUseCase,
-                          UpdateProfileUseCase updateProfileUseCase) {
+                          UpdateProfileUseCase updateProfileUseCase,
+                          JwtTokenProvider jwtTokenProvider) {
         this.registerUserUseCase = registerUserUseCase;
         this.getUserUseCase = getUserUseCase;
         this.updateProfileUseCase = updateProfileUseCase;
+        this.jwtTokenProvider = jwtTokenProvider;
     }
 
+    public record RegisterResponse(String accessToken, String userId) {}
+
     @PostMapping("/register")
-    @Operation(summary = "Inscription d'un nouvel utilisateur")
-    public ResponseEntity<ApiResponse<UserResult>> register(@Valid @RequestBody RegisterRequest request) {
+    @Operation(summary = "Inscription d'un nouvel utilisateur — retourne un JWT")
+    public ResponseEntity<ApiResponse<RegisterResponse>> register(@Valid @RequestBody RegisterRequest request) {
         var command = new RegisterUserCommand(
                 request.email(),
                 request.password(),
@@ -47,7 +53,9 @@ public class UserController {
                 request.lastName()
         );
         UserResult result = registerUserUseCase.register(command);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(result));
+        String token = jwtTokenProvider.generateToken(result.id(), result.email(), "USER");
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok(new RegisterResponse(token, result.id())));
     }
 
     @GetMapping("/me")

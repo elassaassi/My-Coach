@@ -77,10 +77,16 @@ class ActivityPersistenceAdapter implements ActivityRepository {
         return jpaRepository.findWithParticipantsById(id.value()).map(ActivityMapper::toDomain);
     }
 
+    private static final Instant DATE_MIN = Instant.parse("2000-01-01T00:00:00Z");
+    private static final Instant DATE_MAX = Instant.parse("2100-12-31T23:59:59Z");
+
     @Override
     public List<Activity> search(String sport, String city, String status, Instant dateFrom, Instant dateTo, int page, int size) {
         var pageable = PageRequest.of(page, size);
-        return jpaRepository.search(lower(sport), lower(city), blankToNull(status), dateFrom, dateTo, pageable)
+        return jpaRepository.search(lower(sport), lower(city), blankToNull(status),
+                        dateFrom != null ? dateFrom : DATE_MIN,
+                        dateTo   != null ? dateTo   : DATE_MAX,
+                        pageable)
                 .stream()
                 .map(ActivityMapper::toDomain)
                 .toList();

@@ -36,11 +36,11 @@ interface ActivityJpaRepository extends JpaRepository<ActivityEntity, String> {
     @EntityGraph("Activity.withParticipants")
     @Query("""
             SELECT DISTINCT a FROM ActivityEntity a
-            WHERE (:sport    IS NULL OR LOWER(a.sport) = :sport)
-              AND (:city     IS NULL OR LOWER(a.city)  = :city)
-              AND (:status   IS NULL OR a.status        = :status)
-              AND (:dateFrom IS NULL OR a.scheduledAt  >= :dateFrom)
-              AND (:dateTo   IS NULL OR a.scheduledAt  <= :dateTo)
+            WHERE (:sport  IS NULL OR LOWER(a.sport) = :sport)
+              AND (:city   IS NULL OR LOWER(a.city)  = :city)
+              AND (:status IS NULL OR a.status        = :status)
+              AND a.scheduledAt >= :dateFrom
+              AND a.scheduledAt <= :dateTo
             ORDER BY a.scheduledAt ASC
             """)
     List<ActivityEntity> search(
