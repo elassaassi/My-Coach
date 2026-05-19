@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotNull;
 import org.elas.momentum.rating.domain.model.PlayerLevel;
 import org.elas.momentum.rating.domain.port.in.GetLeaderboardUseCase;
 import org.elas.momentum.rating.domain.port.in.GetPlayerStatsUseCase;
+import org.elas.momentum.rating.domain.port.in.HasRatedActivityUseCase;
 import org.elas.momentum.rating.domain.port.in.RatePlayerUseCase;
 import org.elas.momentum.shared.web.ApiResponse;
 import org.springframework.http.ResponseEntity;
@@ -26,13 +27,16 @@ public class RatingController {
     private final RatePlayerUseCase ratePlayerUseCase;
     private final GetPlayerStatsUseCase getStatsUseCase;
     private final GetLeaderboardUseCase getLeaderboardUseCase;
+    private final HasRatedActivityUseCase hasRatedActivityUseCase;
 
     public RatingController(RatePlayerUseCase ratePlayerUseCase,
                              GetPlayerStatsUseCase getStatsUseCase,
-                             GetLeaderboardUseCase getLeaderboardUseCase) {
+                             GetLeaderboardUseCase getLeaderboardUseCase,
+                             HasRatedActivityUseCase hasRatedActivityUseCase) {
         this.ratePlayerUseCase = ratePlayerUseCase;
         this.getStatsUseCase = getStatsUseCase;
         this.getLeaderboardUseCase = getLeaderboardUseCase;
+        this.hasRatedActivityUseCase = hasRatedActivityUseCase;
     }
 
     public record RateRequest(
@@ -56,6 +60,14 @@ public class RatingController {
                 req.behavior(), req.technicality(), req.teamwork(),
                 req.level(), req.isManOfMatch(), req.comment()));
         return ResponseEntity.ok(ApiResponse.ok(id));
+    }
+
+    @GetMapping("/activity/{activityId}/hasRated")
+    @Operation(summary = "Check if the current user has already rated players for an activity")
+    public ResponseEntity<ApiResponse<Boolean>> hasRated(
+            @AuthenticationPrincipal String raterId,
+            @PathVariable String activityId) {
+        return ResponseEntity.ok(ApiResponse.ok(hasRatedActivityUseCase.hasRated(activityId, raterId)));
     }
 
     @GetMapping("/stats/{userId}")

@@ -8,6 +8,7 @@ public record ActivityMessageResult(
         String  senderId,
         String  senderFirstName,
         String  senderLastName,
+        String  senderAvatarUrl,
         String  content,
         Instant sentAt
 ) {}

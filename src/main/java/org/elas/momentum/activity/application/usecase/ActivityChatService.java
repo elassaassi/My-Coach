@@ -64,6 +64,7 @@ public class ActivityChatService {
                 e.getId(), e.getActivityId(), e.getSenderId(),
                 sender.map(s -> s.firstName()).orElse(null),
                 sender.map(s -> s.lastName()).orElse(null),
+                sender.map(s -> s.avatarUrl()).orElse(null),
                 e.getContent(), e.getSentAt());
     }
 }

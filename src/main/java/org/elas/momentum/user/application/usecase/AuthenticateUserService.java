@@ -28,13 +28,18 @@ public class AuthenticateUserService implements AuthenticateUserUseCase {
         var user = userRepository.findByEmail(Email.of(email))
                 .orElseThrow(() -> new UserNotFoundException(email));
 
+        if (user.getStatus() == UserStatus.SUSPENDED) {
+            throw new AccountSuspendedException();
+        }
+
+        if (user.getStatus() == UserStatus.DELETED) {
+            throw new UserNotFoundException(email);
+        }
+
         if (!passwordEncoder.matches(rawPassword, user.getPasswordHash())) {
             throw new InvalidCredentialsException();
         }
 
-        if (user.getStatus() == UserStatus.SUSPENDED) {
-            throw new AccountSuspendedException();
-        }
 
         return new AuthResult(user.getId().value(), user.getEmail().value(), "USER");
     }

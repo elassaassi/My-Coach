@@ -50,9 +50,9 @@ public class ActivityScheduler {
             }
         }
 
-        // ── ONGOING → COMPLETED (2 h after start) ───────────────────────────
+        // ── ONGOING / OPEN / FULL → COMPLETED (2 h after scheduledAt) ──────
         var toComplete = activityRepository.findByStatusInAndScheduledAtBefore(
-                List.of(ActivityStatus.ONGOING), completeCutoff);
+                List.of(ActivityStatus.ONGOING, ActivityStatus.OPEN, ActivityStatus.FULL), completeCutoff);
 
         for (var activity : toComplete) {
             try {

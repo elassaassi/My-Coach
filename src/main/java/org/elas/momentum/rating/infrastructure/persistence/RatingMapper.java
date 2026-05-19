@@ -50,6 +50,7 @@ public class RatingMapper {
     public PlayerStats toDomain(PlayerStatsEntity e) {
         return new PlayerStats(e.getUserId(), e.getSport(), e.getTotalRatings(),
                 e.getAvgBehavior(), e.getAvgTechnicality(), e.getAvgTeamwork(),
-                e.getWinRate(), e.getManOfMatchCount(), e.getProScore(), e.getUpdatedAt());
+                e.getWinRate(), e.getManOfMatchCount(), e.getProScore(),
+                PlayerStats.levelFromScore(e.getProScore()), e.getUpdatedAt());
     }
 }

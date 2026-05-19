@@ -41,6 +41,11 @@ public class RatingPersistenceAdapter implements RatingRepository, PlayerStatsRe
     }
 
     @Override
+    public boolean hasRatedActivity(String activityId, String raterId) {
+        return ratingRepo.existsByActivityIdAndRaterId(activityId, raterId);
+    }
+
+    @Override
     public List<PlayerRating> findByActivityIdAndRatedUserId(String activityId, String ratedUserId) {
         return ratingRepo.findByActivityIdAndRatedUserId(activityId, ratedUserId)
                 .stream().map(mapper::toDomain).toList();

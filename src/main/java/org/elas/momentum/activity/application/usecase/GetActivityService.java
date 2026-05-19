@@ -34,7 +34,8 @@ public class GetActivityService implements GetActivityUseCase {
                     return new ActivityResult.ParticipantDto(
                             p.userId(), p.joinedAt(),
                             summary.map(s -> s.firstName()).orElse(null),
-                            summary.map(s -> s.lastName()).orElse(null));
+                            summary.map(s -> s.lastName()).orElse(null),
+                            summary.map(s -> s.avatarUrl()).orElse(null));
                 })
                 .toList();
         return new ActivityResult(

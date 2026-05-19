@@ -10,6 +10,8 @@ public interface PlayerRatingJpaRepository extends JpaRepository<PlayerRatingEnt
 
     boolean existsByActivityIdAndRaterIdAndRatedUserId(String activityId, String raterId, String ratedUserId);
 
+    boolean existsByActivityIdAndRaterId(String activityId, String raterId);
+
     List<PlayerRatingEntity> findByActivityIdAndRatedUserId(String activityId, String ratedUserId);
 
     @Query("SELECT COUNT(r) FROM PlayerRatingEntity r WHERE r.activityId = :activityId AND r.ratedUserId = :userId AND r.isManOfMatch = true")
