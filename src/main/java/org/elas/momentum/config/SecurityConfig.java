@@ -70,8 +70,9 @@ public class SecurityConfig {
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, e) -> {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                            response.setContentType("application/json");
-                            response.getWriter().write("{\"success\":false,\"message\":\"Unauthorized\"}");
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write(
+                                    "{\"success\":false,\"data\":null,\"error\":\"Session expirée ou token invalide. Reconnecte-toi.\",\"code\":\"UNAUTHORIZED\"}");
                         })
                 );
 
