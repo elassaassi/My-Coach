@@ -1,5 +1,6 @@
 package org.elas.momentum.user;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -18,4 +19,7 @@ public interface UserModuleAPI {
      * @return userId de l'utilisateur trouvé ou créé
      */
     String findOrCreateOAuthUser(String email, String firstName, String lastName);
+
+    /** Retourne tous les utilisateurs actifs pratiquant ce sport, sauf le demandeur. */
+    List<UserSummary> findBySport(String sport, String excludeUserId);
 }

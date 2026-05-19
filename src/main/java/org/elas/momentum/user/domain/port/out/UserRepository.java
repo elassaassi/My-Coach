@@ -4,6 +4,7 @@ import org.elas.momentum.user.domain.model.Email;
 import org.elas.momentum.user.domain.model.User;
 import org.elas.momentum.user.domain.model.UserId;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository {
@@ -11,4 +12,5 @@ public interface UserRepository {
     Optional<User> findById(UserId id);
     Optional<User> findByEmail(Email email);
     boolean existsByEmail(Email email);
+    List<User> findBySport(String sport, String excludeUserId);
 }

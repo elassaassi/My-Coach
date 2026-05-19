@@ -6,6 +6,7 @@ import org.elas.momentum.user.domain.model.UserId;
 import org.elas.momentum.user.domain.port.out.UserRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -53,6 +54,14 @@ class UserPersistenceAdapter implements UserRepository {
     @Override
     public boolean existsByEmail(Email email) {
         return jpaRepository.existsByEmail(email.value());
+    }
+
+    @Override
+    public List<User> findBySport(String sport, String excludeUserId) {
+        return jpaRepository.findBySportAndExclude(sport, excludeUserId)
+                .stream()
+                .map(UserMapper::toDomain)
+                .toList();
     }
 
     private void mergeBasicFields(UserEntity existing, User user) {

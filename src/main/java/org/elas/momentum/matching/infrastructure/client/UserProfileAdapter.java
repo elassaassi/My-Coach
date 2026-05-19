@@ -31,8 +31,12 @@ class UserProfileAdapter implements UserProfilePort {
 
     @Override
     public List<CandidateProfile> findCandidates(String sport, String requesterId) {
-        // Phase 0 : requête simplifiée — on filtre via l'API publique
-        // Phase 1 : requête directe avec pagination
-        return List.of(); // Implémentation complète via query JPQL Phase 1
+        return userModuleAPI.findBySport(sport, requesterId).stream()
+                .flatMap(u -> u.sports().stream()
+                        .filter(sl -> sl.sport().equals(sport))
+                        .map(sl -> new CandidateProfile(
+                                u.id(), sl.sport(), sl.proficiency(),
+                                sl.yearsExperience(), u.latitude(), u.longitude())))
+                .toList();
     }
 }

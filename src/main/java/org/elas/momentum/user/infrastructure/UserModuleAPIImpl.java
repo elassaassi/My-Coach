@@ -9,6 +9,7 @@ import org.elas.momentum.user.domain.port.out.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -49,6 +50,25 @@ public class UserModuleAPIImpl implements UserModuleAPI {
     @Override
     public boolean exists(String userId) {
         return userRepository.findById(UserId.of(userId)).isPresent();
+    }
+
+    @Override
+    public List<UserSummary> findBySport(String sport, String excludeUserId) {
+        return userRepository.findBySport(sport, excludeUserId).stream()
+                .map(user -> {
+                    var sports = user.getSportProfile().sports().stream()
+                            .map(sl -> new UserSummary.SportLevelSummary(
+                                    sl.sport(), sl.proficiency().name(), sl.yearsExperience()))
+                            .toList();
+                    return new UserSummary(
+                            user.getId().value(), user.getEmail().value(),
+                            user.getFirstName(), user.getLastName(),
+                            user.getAvatarUrl(), user.getStatus().name(),
+                            sports,
+                            user.getSportProfile().latitude(), user.getSportProfile().longitude(),
+                            user.getSportProfile().city(), user.getSportProfile().country());
+                })
+                .toList();
     }
 
     @Override
