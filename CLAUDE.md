@@ -95,7 +95,6 @@
 | TEST-06 | [ON]   | Le mutation score du domaine (PIT) ne descend pas sous le seuil courant — `./mvnw clean test -P mutation` (rapport : `target/pit-reports/index.html`) |
 
 ---
-
 ## Commandes rapides
 
 ```

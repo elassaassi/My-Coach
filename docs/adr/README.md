@@ -12,5 +12,6 @@
 | [ADR-008](ADR-008-interface-token-issuer.md) | Interface TokenIssuer (DIP) | Accepté |
 | [ADR-009](ADR-009-proscore-formula.md) | Formule de calcul du proScore | Accepté |
 | [ADR-010](ADR-010-graphe-social-differe.md) | Base de données graphe — décision différée | Différé |
+| [ADR-011](ADR-011-gestion-exceptions-io-upload.md) | Gestion des IOException dans le GlobalExceptionHandler | Accepté |
 
 \* ADR-004 : réévaluation recommandée avant le passage en production publique (absence de révocation).

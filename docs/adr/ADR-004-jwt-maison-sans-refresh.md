@@ -21,4 +21,34 @@ L'authentification doit être stateless pour supporter les virtual threads et un
 **Négatif**
 - Un token volé reste valide 24h sans possibilité de révocation immédiate.
 - Pas de rotation de clé sans invalider tous les tokens existants.
-- À corriger avant la production publique : introduire une blacklist Redis (TTL = durée restante du token) ou basculer sur Keycloak.
+
+---
+
+## Plan de remédiation avant production publique
+
+Deux voies, par ordre de complexité croissante :
+
+### Option A — Blacklist Redis (recommandée Phase 2)
+Ajouter un `Set<String>` Redis keyed `jwt:blacklist:<jti>` avec TTL = durée restante du token.
+
+```
+// À la déconnexion ou suspension de compte :
+redis.set("jwt:blacklist:" + jti, "1", Duration.ofMillis(remainingTtl));
+
+// Dans JwtAuthenticationFilter.doFilterInternal() :
+if (redisTemplate.hasKey("jwt:blacklist:" + jti)) {
+    response.sendError(401, "Token révoqué");
+    return;
+}
+```
+
+**Impact :** modification de `JwtAuthenticationFilter` uniquement. Redis est déjà disponible.  
+**Coût :** faible — TTL garantit le nettoyage automatique, pas de fuite mémoire.
+
+### Option B — Basculer sur Keycloak (recommandée production complète)
+Le profil `keycloak` est déjà câblé (`KeycloakJwtConverter`). Keycloak gère révocation, refresh tokens, PKCE et rotation de clés nativement.  
+**Impact :** opérationnel (déployer Keycloak en HA), zéro changement applicatif côté controllers.
+
+---
+
+**Décision :** Option A en Phase 2 dès que la base d'utilisateurs dépasse 1 000 comptes actifs. Option B pour la mise en production publique à grande échelle.

@@ -2,6 +2,8 @@ package org.elas.momentum.highlight.infrastructure.web;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.elas.momentum.highlight.application.dto.CommentResponse;
 import org.elas.momentum.highlight.application.dto.HighlightResponse;
 import org.elas.momentum.highlight.domain.model.MediaType;
@@ -36,6 +38,8 @@ import java.util.UUID;
 @RequestMapping("/api/v1/highlights")
 @Tag(name = "Highlights", description = "Highlights sportifs du jour")
 public class HighlightController {
+
+    private static final Logger log = LoggerFactory.getLogger(HighlightController.class);
 
     private final PublishHighlightUseCase  publishHighlightUseCase;
     private final LikeHighlightUseCase     likeHighlightUseCase;
@@ -228,13 +232,15 @@ public class HighlightController {
                         .redirectErrorStream(true)
                         .start()
                         .waitFor();
-                Files.deleteIfExists(tmpPath);
                 if (exit == 0) {
+                    Files.deleteIfExists(tmpPath);
                     return ResponseEntity.ok(ApiResponse.ok(Map.of("url", "/uploads/" + finalName)));
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-            } catch (Exception ignored) { /* ffmpeg absent — fallback to original */ }
+            } catch (IOException | SecurityException e) {
+                log.warn("ffmpeg unavailable or failed, using original file: {}", e.getMessage());
+            }
             String fallbackName = UUID.randomUUID() + safeExt;
             Files.move(tmpPath, dir.resolve(fallbackName));
             return ResponseEntity.ok(ApiResponse.ok(Map.of("url", "/uploads/" + fallbackName)));

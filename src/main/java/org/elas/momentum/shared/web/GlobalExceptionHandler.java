@@ -61,10 +61,15 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(IOException.class)
-    public ResponseEntity<Void> handleClientAbort(IOException ex) {
-        // Broken pipe: client disconnected during streaming — nothing to do
-        log.debug("Client disconnected: {}", ex.getMessage());
-        return ResponseEntity.ok().build();
+    public ResponseEntity<ApiResponse<Void>> handleIoException(IOException ex) {
+        String msg = ex.getMessage();
+        if (msg != null && (msg.contains("Broken pipe") || msg.contains("Connection reset"))) {
+            log.debug("Client disconnected: {}", msg);
+            return ResponseEntity.ok(ApiResponse.ok(null));
+        }
+        log.error("I/O error", ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("IO_ERROR", "Une erreur I/O inattendue s'est produite"));
     }
 
     @ExceptionHandler(Exception.class)
