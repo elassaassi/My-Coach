@@ -6,8 +6,11 @@ import org.elas.momentum.user.domain.model.UserId;
 import org.elas.momentum.user.domain.port.out.UserRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Repository
 class UserPersistenceAdapter implements UserRepository {
@@ -44,6 +47,14 @@ class UserPersistenceAdapter implements UserRepository {
     @Override
     public Optional<User> findById(UserId id) {
         return jpaRepository.findById(id.value()).map(UserMapper::toDomain);
+    }
+
+    @Override
+    public Map<String, User> findByIds(Collection<UserId> ids) {
+        var rawIds = ids.stream().map(UserId::value).toList();
+        return jpaRepository.findAllByIdIn(rawIds).stream()
+                .map(UserMapper::toDomain)
+                .collect(Collectors.toMap(u -> u.getId().value(), u -> u));
     }
 
     @Override

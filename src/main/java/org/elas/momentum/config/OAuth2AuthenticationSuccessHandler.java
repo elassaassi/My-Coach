@@ -24,14 +24,14 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
     private static final Logger log = LoggerFactory.getLogger(OAuth2AuthenticationSuccessHandler.class);
 
-    private final JwtTokenProvider jwtTokenProvider;
+    private final TokenIssuer tokenIssuer;
     private final UserModuleAPI userModuleAPI;
 
     @Value("${momentum.oauth2.redirect-uri:http://localhost:4200/auth/callback}")
     private String redirectUri;
 
-    public OAuth2AuthenticationSuccessHandler(JwtTokenProvider jwtTokenProvider, UserModuleAPI userModuleAPI) {
-        this.jwtTokenProvider = jwtTokenProvider;
+    public OAuth2AuthenticationSuccessHandler(TokenIssuer tokenIssuer, UserModuleAPI userModuleAPI) {
+        this.tokenIssuer   = tokenIssuer;
         this.userModuleAPI = userModuleAPI;
     }
 
@@ -57,7 +57,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         String userId = userModuleAPI.findOrCreateOAuthUser(email, firstName, lastName);
 
         // Générer le JWT Momentum
-        String token = jwtTokenProvider.generateToken(userId, email, "USER");
+        String token = tokenIssuer.generateToken(userId, email, "USER");
 
         log.info("OAuth2 login OK — userId={} email={}", userId, email);
 

@@ -22,14 +22,14 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthenticateUserUseCase authenticateUserUseCase;
-    private final JwtTokenProvider jwtTokenProvider;
+    private final TokenIssuer tokenIssuer;
     private final OAuth2ClientConfig.OAuth2Availability oAuth2Availability;
 
     public AuthController(AuthenticateUserUseCase authenticateUserUseCase,
-                          JwtTokenProvider jwtTokenProvider,
+                          TokenIssuer tokenIssuer,
                           OAuth2ClientConfig.OAuth2Availability oAuth2Availability) {
         this.authenticateUserUseCase = authenticateUserUseCase;
-        this.jwtTokenProvider        = jwtTokenProvider;
+        this.tokenIssuer             = tokenIssuer;
         this.oAuth2Availability      = oAuth2Availability;
     }
 
@@ -47,7 +47,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
         try {
             var result = authenticateUserUseCase.authenticate(request.email(), request.password());
-            String token = jwtTokenProvider.generateToken(result.userId(), result.email(), result.role());
+            String token = tokenIssuer.generateToken(result.userId(), result.email(), result.role());
             return ResponseEntity.ok(ApiResponse.ok(new LoginResponse(token, result.userId())));
         } catch (BusinessException ex) {
             int status = "ACCOUNT_SUSPENDED".equals(ex.getCode()) ? 403 : 401;

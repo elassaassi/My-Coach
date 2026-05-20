@@ -11,12 +11,20 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class RateLimitFilter extends OncePerRequestFilter {
 
-    private final Map<String, Bucket> bucketCache = new ConcurrentHashMap<>();
+    // LRU cache bounded to 50 000 entries — prevents unbounded growth under IP flood.
+    private final Map<String, Bucket> bucketCache = Collections.synchronizedMap(
+            new LinkedHashMap<>(1024, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, Bucket> eldest) {
+                    return size() > 50_000;
+                }
+            });
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -49,10 +57,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private String getClientKey(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
-        }
+        // Never trust X-Forwarded-For: a client can forge it to bypass rate limiting.
+        // Use the TCP-level remote address which cannot be spoofed.
         return request.getRemoteAddr();
     }
 }

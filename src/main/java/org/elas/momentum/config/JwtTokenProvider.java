@@ -12,7 +12,7 @@ import java.util.Date;
 import java.util.Map;
 
 @Component
-public class JwtTokenProvider {
+public class JwtTokenProvider implements TokenIssuer {
 
     private final SecretKey secretKey;
     private final long expirationMs;

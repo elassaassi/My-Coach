@@ -3,7 +3,8 @@ package org.elas.momentum.user.infrastructure.web;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.elas.momentum.config.JwtTokenProvider;
+import org.elas.momentum.config.TokenIssuer;
+import org.elas.momentum.shared.FileValidator;
 import org.elas.momentum.shared.web.ApiResponse;
 import org.elas.momentum.user.application.dto.RegisterUserCommand;
 import org.elas.momentum.user.application.dto.UpdateProfileCommand;
@@ -12,6 +13,7 @@ import org.elas.momentum.user.domain.port.in.GetUserUseCase;
 import org.elas.momentum.user.domain.port.in.RegisterUserUseCase;
 import org.elas.momentum.user.domain.port.in.UpdateAvatarUseCase;
 import org.elas.momentum.user.domain.port.in.UpdateProfileUseCase;
+import org.elas.momentum.user.infrastructure.web.dto.PublicUserResult;
 import org.elas.momentum.user.infrastructure.web.dto.RegisterRequest;
 import org.elas.momentum.user.infrastructure.web.dto.UpdateProfileRequest;
 import org.springframework.http.HttpStatus;
@@ -21,12 +23,12 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.UUID;
-
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
@@ -34,24 +36,25 @@ import java.util.stream.Collectors;
 @Tag(name = "Users", description = "Gestion des profils utilisateurs")
 public class UserController {
 
-    private static final Path UPLOAD_DIR = Paths.get("uploads/avatars");
+    private static final Path UPLOAD_DIR = Paths.get("uploads/avatars").toAbsolutePath().normalize();
+    private static final long MAX_AVATAR_BYTES = 5 * 1024 * 1024L; // 5 MB
 
     private final RegisterUserUseCase registerUserUseCase;
     private final GetUserUseCase getUserUseCase;
     private final UpdateProfileUseCase updateProfileUseCase;
     private final UpdateAvatarUseCase updateAvatarUseCase;
-    private final JwtTokenProvider jwtTokenProvider;
+    private final TokenIssuer tokenIssuer;
 
     public UserController(RegisterUserUseCase registerUserUseCase,
                           GetUserUseCase getUserUseCase,
                           UpdateProfileUseCase updateProfileUseCase,
                           UpdateAvatarUseCase updateAvatarUseCase,
-                          JwtTokenProvider jwtTokenProvider) {
+                          TokenIssuer tokenIssuer) {
         this.registerUserUseCase = registerUserUseCase;
         this.getUserUseCase = getUserUseCase;
         this.updateProfileUseCase = updateProfileUseCase;
         this.updateAvatarUseCase = updateAvatarUseCase;
-        this.jwtTokenProvider = jwtTokenProvider;
+        this.tokenIssuer = tokenIssuer;
     }
 
     public record RegisterResponse(String accessToken, String userId) {}
@@ -66,7 +69,7 @@ public class UserController {
                 request.lastName()
         );
         UserResult result = registerUserUseCase.register(command);
-        String token = jwtTokenProvider.generateToken(result.id(), result.email(), "USER");
+        String token = tokenIssuer.generateToken(result.id(), result.email(), "USER");
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok(new RegisterResponse(token, result.id())));
     }
@@ -78,9 +81,12 @@ public class UserController {
     }
 
     @GetMapping("/{userId}")
-    @Operation(summary = "Profil d'un utilisateur par ID")
-    public ResponseEntity<ApiResponse<UserResult>> getById(@PathVariable String userId) {
-        return ResponseEntity.ok(ApiResponse.ok(getUserUseCase.getById(userId)));
+    @Operation(summary = "Profil public d'un utilisateur (email et coordonnées GPS exclus)")
+    public ResponseEntity<ApiResponse<PublicUserResult>> getById(
+            @AuthenticationPrincipal String requesterId,
+            @PathVariable String userId) {
+        var full = getUserUseCase.getById(userId);
+        return ResponseEntity.ok(ApiResponse.ok(PublicUserResult.from(full)));
     }
 
     @PutMapping("/me/profile")
@@ -114,19 +120,38 @@ public class UserController {
             @AuthenticationPrincipal String userId,
             @RequestParam("file") MultipartFile file) throws IOException {
 
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("EMPTY_FILE", "Le fichier est vide"));
+        }
+        if (file.getSize() > MAX_AVATAR_BYTES) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("FILE_TOO_LARGE", "Taille maximale : 5 Mo"));
+        }
+
+        byte[] magic = readMagicBytes(file.getInputStream());
+        String ext = FileValidator.imageExtension(magic);
+        if (ext == null) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("INVALID_FILE_TYPE", "Format non autorisé. Acceptés : JPG, PNG, WEBP, GIF"));
+        }
+
         Files.createDirectories(UPLOAD_DIR);
-        String ext = getExtension(file.getOriginalFilename());
-        String filename = userId + "_" + UUID.randomUUID() + ext;
-        Files.copy(file.getInputStream(), UPLOAD_DIR.resolve(filename),
-                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        String filename = UUID.randomUUID() + ext;
+        Path dest = UPLOAD_DIR.resolve(filename).normalize();
+        if (!dest.startsWith(UPLOAD_DIR)) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("INVALID_FILE", "Chemin de fichier invalide"));
+        }
+        file.transferTo(dest);
 
         String avatarUrl = "/uploads/avatars/" + filename;
         return ResponseEntity.ok(ApiResponse.ok(updateAvatarUseCase.updateAvatar(userId, avatarUrl)));
     }
 
-    private String getExtension(String filename) {
-        if (filename == null) return ".jpg";
-        int dot = filename.lastIndexOf('.');
-        return dot >= 0 ? filename.substring(dot).toLowerCase() : ".jpg";
+    private static byte[] readMagicBytes(InputStream is) throws IOException {
+        try (is) {
+            return is.readNBytes(FileValidator.MAGIC_BYTES_LENGTH);
+        }
     }
 }

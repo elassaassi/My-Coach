@@ -10,7 +10,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -24,27 +27,14 @@ public class UserModuleAPIImpl implements UserModuleAPI {
 
     @Override
     public Optional<UserSummary> findById(String userId) {
-        return userRepository.findById(UserId.of(userId))
-                .map(user -> {
-                    var sports = user.getSportProfile().sports().stream()
-                            .map(sl -> new UserSummary.SportLevelSummary(
-                                    sl.sport(), sl.proficiency().name(), sl.yearsExperience()))
-                            .toList();
+        return userRepository.findById(UserId.of(userId)).map(this::toSummary);
+    }
 
-                    return new UserSummary(
-                            user.getId().value(),
-                            user.getEmail().value(),
-                            user.getFirstName(),
-                            user.getLastName(),
-                            user.getAvatarUrl(),
-                            user.getStatus().name(),
-                            sports,
-                            user.getSportProfile().latitude(),
-                            user.getSportProfile().longitude(),
-                            user.getSportProfile().city(),
-                            user.getSportProfile().country()
-                    );
-                });
+    @Override
+    public Map<String, UserSummary> findByIds(Set<String> userIds) {
+        var ids = userIds.stream().map(UserId::of).toList();
+        return userRepository.findByIds(ids).entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> toSummary(e.getValue())));
     }
 
     @Override
@@ -55,20 +45,21 @@ public class UserModuleAPIImpl implements UserModuleAPI {
     @Override
     public List<UserSummary> findBySport(String sport, String excludeUserId) {
         return userRepository.findBySport(sport, excludeUserId).stream()
-                .map(user -> {
-                    var sports = user.getSportProfile().sports().stream()
-                            .map(sl -> new UserSummary.SportLevelSummary(
-                                    sl.sport(), sl.proficiency().name(), sl.yearsExperience()))
-                            .toList();
-                    return new UserSummary(
-                            user.getId().value(), user.getEmail().value(),
-                            user.getFirstName(), user.getLastName(),
-                            user.getAvatarUrl(), user.getStatus().name(),
-                            sports,
-                            user.getSportProfile().latitude(), user.getSportProfile().longitude(),
-                            user.getSportProfile().city(), user.getSportProfile().country());
-                })
+                .map(this::toSummary)
                 .toList();
+    }
+
+    private UserSummary toSummary(User user) {
+        var sports = user.getSportProfile().sports().stream()
+                .map(sl -> new UserSummary.SportLevelSummary(sl.sport(), sl.proficiency().name(), sl.yearsExperience()))
+                .toList();
+        return new UserSummary(
+                user.getId().value(), user.getEmail().value(),
+                user.getFirstName(), user.getLastName(),
+                user.getAvatarUrl(), user.getStatus().name(),
+                sports,
+                user.getSportProfile().latitude(), user.getSportProfile().longitude(),
+                user.getSportProfile().city(), user.getSportProfile().country());
     }
 
     @Override

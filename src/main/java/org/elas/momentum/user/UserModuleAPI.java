@@ -1,7 +1,9 @@
 package org.elas.momentum.user;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Interface publique du module User.
@@ -9,6 +11,10 @@ import java.util.Optional;
  */
 public interface UserModuleAPI {
     Optional<UserSummary> findById(String userId);
+
+    /** Batch lookup — 1 requête SQL pour N ids. Préférer à findById en boucle. */
+    Map<String, UserSummary> findByIds(Set<String> userIds);
+
     boolean exists(String userId);
 
     /**

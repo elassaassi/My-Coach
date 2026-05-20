@@ -27,6 +27,8 @@
         <rest-assured.version>5.5.0</rest-assured.version>
         <bucket4j.version>8.10.1</bucket4j.version>
         <logstash-encoder.version>8.0</logstash-encoder.version>
+        <pitest.version>1.17.0</pitest.version>
+        <pitest-junit5.version>1.2.1</pitest-junit5.version>
     </properties>
 
     <dependencyManagement>
@@ -366,5 +368,82 @@
 
         </plugins>
     </build>
+
+    <!-- ═══════════════════════════════════════════════════════
+         MUTATION TESTING — ./mvnw test -P mutation
+         Rapport : target/pit-reports/index.html
+    ═══════════════════════════════════════════════════════════ -->
+    <profiles>
+        <profile>
+            <id>mutation</id>
+            <build>
+                <plugins>
+                    <!-- Recompile to Java 21 bytecode — PIT 1.17.x does not support class file v69 (Java 25) -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <configuration>
+                            <release>21</release>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-maven</artifactId>
+                        <version>${pitest.version}</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.pitest</groupId>
+                                <artifactId>pitest-junit5-plugin</artifactId>
+                                <version>${pitest-junit5.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <!-- Cible uniquement les modèles de domaine — logique métier pure -->
+                            <targetClasses>
+                                <param>org.elas.momentum.*.domain.model.*</param>
+                            </targetClasses>
+                            <targetTests>
+                                <param>org.elas.momentum.*</param>
+                            </targetTests>
+                            <excludedTestClasses>
+                                <!-- Cucumber + Spring integration tests need a real DB — not suited for PIT -->
+                                <param>org.elas.momentum.bdd.*</param>
+                                <param>org.elas.momentum.MomentumApplicationTests</param>
+                                <param>org.elas.momentum.modulith.*</param>
+                            </excludedTestClasses>
+                            <excludedClasses>
+                                <param>org.elas.momentum.*.infrastructure.*</param>
+                                <param>org.elas.momentum.*.application.*</param>
+                                <param>org.elas.momentum.config.*</param>
+                                <param>org.elas.momentum.shared.*</param>
+                            </excludedClasses>
+                            <mutators>
+                                <mutator>STRONGER</mutator>
+                            </mutators>
+                            <!-- Seuil mutation score ≥ 85% sur le domaine -->
+                            <mutationThreshold>85</mutationThreshold>
+                            <coverageThreshold>90</coverageThreshold>
+                            <outputFormats>
+                                <outputFormat>HTML</outputFormat>
+                                <outputFormat>XML</outputFormat>
+                            </outputFormats>
+                            <!-- Rapport stable sans timestamp pour faciliter le diff CI -->
+                            <timestampedReports>false</timestampedReports>
+                            <jvmArgs>
+                                <jvmArg>--add-opens=java.base/java.lang=ALL-UNNAMED</jvmArg>
+                            </jvmArgs>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>mutation-coverage</id>
+                                <phase>test</phase>
+                                <goals><goal>mutationCoverage</goal></goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>

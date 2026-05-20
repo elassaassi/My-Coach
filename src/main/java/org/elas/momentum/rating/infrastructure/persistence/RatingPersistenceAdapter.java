@@ -84,11 +84,7 @@ public class RatingPersistenceAdapter implements RatingRepository, PlayerStatsRe
     @Override
     public void refreshLeaderboard(String sport) {
         leaderboardRepo.deleteBySport(sport);
-        var topStats = statsRepo.findAll().stream()
-                .filter(s -> "all".equals(s.getSport()) || sport.equals(s.getSport()))
-                .sorted((a, b) -> Integer.compare(b.getProScore(), a.getProScore()))
-                .limit(100)
-                .toList();
+        var topStats = statsRepo.findTopBySport(sport, PageRequest.of(0, 100));
         for (int i = 0; i < topStats.size(); i++) {
             var entry = new LeaderboardCacheEntity();
             entry.setId(new LeaderboardCacheEntity.LeaderboardId(sport, i + 1));

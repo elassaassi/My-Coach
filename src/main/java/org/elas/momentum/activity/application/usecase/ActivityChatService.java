@@ -2,69 +2,71 @@ package org.elas.momentum.activity.application.usecase;
 
 import org.elas.momentum.activity.application.dto.ActivityMessageResult;
 import org.elas.momentum.activity.application.dto.SendMessageCommand;
+import org.elas.momentum.activity.domain.model.ActivityMessage;
+import org.elas.momentum.activity.domain.port.in.GetMessagesUseCase;
 import org.elas.momentum.activity.domain.port.in.GetActivityUseCase;
-import org.elas.momentum.activity.infrastructure.persistence.ActivityMessageEntity;
-import org.elas.momentum.activity.infrastructure.persistence.ActivityMessageJpaRepository;
+import org.elas.momentum.activity.domain.port.in.SendMessageUseCase;
+import org.elas.momentum.activity.domain.port.out.MessageRepository;
 import org.elas.momentum.user.UserModuleAPI;
-import org.springframework.data.domain.PageRequest;
+import org.elas.momentum.user.UserSummary;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
-public class ActivityChatService {
+public class ActivityChatService implements SendMessageUseCase, GetMessagesUseCase {
 
-    private final ActivityMessageJpaRepository messageRepo;
-    private final GetActivityUseCase           getActivityUseCase;
-    private final UserModuleAPI                userModuleAPI;
+    private final MessageRepository     messageRepository;
+    private final GetActivityUseCase    getActivityUseCase;
+    private final UserModuleAPI         userModuleAPI;
 
-    public ActivityChatService(ActivityMessageJpaRepository messageRepo,
+    public ActivityChatService(MessageRepository messageRepository,
                                GetActivityUseCase getActivityUseCase,
                                UserModuleAPI userModuleAPI) {
-        this.messageRepo        = messageRepo;
+        this.messageRepository  = messageRepository;
         this.getActivityUseCase = getActivityUseCase;
         this.userModuleAPI      = userModuleAPI;
     }
 
+    @Override
     public ActivityMessageResult send(String activityId, String senderId, SendMessageCommand cmd) {
         var activity = getActivityUseCase.getById(activityId);
 
-        boolean isMember = activity.participants().stream()
-                .anyMatch(p -> p.userId().equals(senderId))
+        boolean isMember = activity.participants().stream().anyMatch(p -> p.userId().equals(senderId))
                 || activity.organizerId().equals(senderId);
-
         if (!isMember) {
+
             throw new IllegalStateException("Tu dois participer à cette session pour envoyer un message");
         }
 
-        var msg = new ActivityMessageEntity();
-        msg.setId(UUID.randomUUID().toString());
-        msg.setActivityId(activityId);
-        msg.setSenderId(senderId);
-        msg.setContent(cmd.content().trim());
-        msg.setSentAt(Instant.now());
-        messageRepo.save(msg);
+        var message = ActivityMessage.create(activityId, senderId, cmd.content());
+        messageRepository.save(message);
 
-        return toResult(msg);
+        var sender = userModuleAPI.findById(senderId);
+        return toResult(message, sender.orElse(null));
     }
 
+    @Override
     public List<ActivityMessageResult> getMessages(String activityId, int limit) {
-        return messageRepo
-                .findByActivityIdOrderBySentAtAsc(activityId, PageRequest.of(0, limit))
-                .stream()
-                .map(this::toResult)
+        var messages = messageRepository.findByActivityId(activityId, limit);
+
+        Set<String> senderIds = messages.stream().map(ActivityMessage::senderId).collect(Collectors.toSet());
+        Map<String, UserSummary> senders = userModuleAPI.findByIds(senderIds);
+
+        return messages.stream()
+                .map(m -> toResult(m, senders.get(m.senderId())))
                 .toList();
     }
 
-    private ActivityMessageResult toResult(ActivityMessageEntity e) {
-        var sender = userModuleAPI.findById(e.getSenderId());
+    private static ActivityMessageResult toResult(ActivityMessage m, UserSummary sender) {
         return new ActivityMessageResult(
-                e.getId(), e.getActivityId(), e.getSenderId(),
-                sender.map(s -> s.firstName()).orElse(null),
-                sender.map(s -> s.lastName()).orElse(null),
-                sender.map(s -> s.avatarUrl()).orElse(null),
-                e.getContent(), e.getSentAt());
+                m.id(), m.activityId(), m.senderId(),
+                sender != null ? sender.firstName() : null,
+                sender != null ? sender.lastName()  : null,
+                sender != null ? sender.avatarUrl() : null,
+                m.content(), m.sentAt());
     }
 }

@@ -10,28 +10,27 @@ import org.elas.momentum.highlight.domain.port.in.ArchiveHighlightUseCase;
 import org.elas.momentum.highlight.domain.port.in.DeleteHighlightUseCase;
 import org.elas.momentum.highlight.domain.port.in.GetCommentsUseCase;
 import org.elas.momentum.highlight.domain.port.in.GetHighlightOfDayUseCase;
+import org.elas.momentum.highlight.domain.port.in.GetHighlightUseCase;
 import org.elas.momentum.highlight.domain.port.in.LikeHighlightUseCase;
 import org.elas.momentum.highlight.domain.port.in.PublishHighlightUseCase;
 import org.elas.momentum.highlight.domain.port.in.UpdateHighlightUseCase;
-import org.elas.momentum.highlight.domain.port.out.CommentRepository;
-import org.elas.momentum.highlight.domain.port.out.HighlightRepository;
+import org.elas.momentum.shared.FileValidator;
 import org.elas.momentum.shared.web.ApiResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.UUID;
-
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/highlights")
@@ -40,51 +39,42 @@ public class HighlightController {
 
     private final PublishHighlightUseCase  publishHighlightUseCase;
     private final LikeHighlightUseCase     likeHighlightUseCase;
+    private final GetHighlightUseCase      getHighlightUseCase;
     private final GetHighlightOfDayUseCase getHighlightOfDayUseCase;
     private final DeleteHighlightUseCase   deleteHighlightUseCase;
     private final UpdateHighlightUseCase   updateHighlightUseCase;
     private final ArchiveHighlightUseCase  archiveHighlightUseCase;
     private final AddCommentUseCase        addCommentUseCase;
     private final GetCommentsUseCase       getCommentsUseCase;
-    private final HighlightRepository      highlightRepository;
-    private final CommentRepository        commentRepository;
 
     @Value("${momentum.upload.dir:./uploads}")
     private String uploadDir;
 
     public HighlightController(PublishHighlightUseCase publishHighlightUseCase,
                                LikeHighlightUseCase likeHighlightUseCase,
+                               GetHighlightUseCase getHighlightUseCase,
                                GetHighlightOfDayUseCase getHighlightOfDayUseCase,
                                DeleteHighlightUseCase deleteHighlightUseCase,
                                UpdateHighlightUseCase updateHighlightUseCase,
                                ArchiveHighlightUseCase archiveHighlightUseCase,
                                AddCommentUseCase addCommentUseCase,
-                               GetCommentsUseCase getCommentsUseCase,
-                               HighlightRepository highlightRepository,
-                               CommentRepository commentRepository) {
+                               GetCommentsUseCase getCommentsUseCase) {
         this.publishHighlightUseCase  = publishHighlightUseCase;
         this.likeHighlightUseCase     = likeHighlightUseCase;
+        this.getHighlightUseCase      = getHighlightUseCase;
         this.getHighlightOfDayUseCase = getHighlightOfDayUseCase;
         this.deleteHighlightUseCase   = deleteHighlightUseCase;
         this.updateHighlightUseCase   = updateHighlightUseCase;
         this.archiveHighlightUseCase  = archiveHighlightUseCase;
         this.addCommentUseCase        = addCommentUseCase;
         this.getCommentsUseCase       = getCommentsUseCase;
-        this.highlightRepository      = highlightRepository;
-        this.commentRepository        = commentRepository;
     }
 
     @GetMapping
     @Operation(summary = "Feed des highlights (triés par likes et récence)")
     public ResponseEntity<ApiResponse<List<HighlightResponse>>> getFeed(
             @RequestParam(defaultValue = "30") int limit) {
-        var highlights = highlightRepository.findTopByLikesAndRecency(Math.min(limit, 100));
-        var ids = highlights.stream().map(h -> h.getId().value()).toList();
-        var counts = commentRepository.countByHighlightIds(ids);
-        var response = highlights.stream()
-                .map(h -> HighlightResponse.from(h, counts.getOrDefault(h.getId().value(), 0L).intValue()))
-                .toList();
-        return ResponseEntity.ok(ApiResponse.ok(response));
+        return ResponseEntity.ok(ApiResponse.ok(getHighlightUseCase.getFeed(Math.min(limit, 100))));
     }
 
     @PostMapping
@@ -128,10 +118,7 @@ public class HighlightController {
     @GetMapping("/{id}")
     @Operation(summary = "Détail d'un highlight")
     public ResponseEntity<ApiResponse<HighlightResponse>> getById(@PathVariable String id) {
-        var highlight = highlightRepository.findById(id)
-                .map(HighlightResponse::from)
-                .orElseThrow(() -> new IllegalArgumentException("Highlight not found: " + id));
-        return ResponseEntity.ok(ApiResponse.ok(highlight));
+        return ResponseEntity.ok(ApiResponse.ok(getHighlightUseCase.getById(id)));
     }
 
     @PatchMapping("/{id}")
@@ -166,10 +153,7 @@ public class HighlightController {
     @Operation(summary = "Publications archivées de l'utilisateur connecté")
     public ResponseEntity<ApiResponse<List<HighlightResponse>>> getArchived(
             @AuthenticationPrincipal String userId) {
-        var list = highlightRepository.findArchivedByPublisherId(userId).stream()
-                .map(HighlightResponse::from)
-                .toList();
-        return ResponseEntity.ok(ApiResponse.ok(list));
+        return ResponseEntity.ok(ApiResponse.ok(getHighlightUseCase.getArchivedByUser(userId)));
     }
 
     @DeleteMapping("/{id}")
@@ -211,23 +195,29 @@ public class HighlightController {
     public ResponseEntity<ApiResponse<Map<String, String>>> uploadMedia(
             @RequestPart("file") MultipartFile file) throws IOException {
 
-        String contentType = file.getContentType();
-        if (contentType == null || (!contentType.startsWith("image/") && !contentType.startsWith("video/"))) {
+        if (file.isEmpty()) {
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("INVALID_FILE_TYPE", "Seules les images et vidéos sont acceptées"));
+                    .body(ApiResponse.error("EMPTY_FILE", "Le fichier est vide"));
         }
 
-        Path dir = Path.of(uploadDir);
+        byte[] magic = readMagicBytes(file.getInputStream());
+        boolean isImage = FileValidator.isAllowedImage(magic);
+        boolean isVideo = !isImage && FileValidator.isAllowedVideo(magic);
+
+        if (!isImage && !isVideo) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("INVALID_FILE_TYPE", "Format non autorisé. Acceptés : JPG, PNG, WEBP, GIF, MP4, WebM, AVI"));
+        }
+
+        Path dir = Path.of(uploadDir).toAbsolutePath().normalize();
         Files.createDirectories(dir);
 
-        String original = StringUtils.hasText(file.getOriginalFilename()) ? file.getOriginalFilename() : "file";
-        String origExt  = original.contains(".") ? original.substring(original.lastIndexOf('.')).toLowerCase() : "";
-
-        if (contentType.startsWith("video/")) {
-            // Transcode to MP4 to ensure audio works in all browsers (MOV/AVI/etc.)
+        if (isVideo) {
+            // Extension déterminée par magic bytes — jamais par le nom de fichier client.
+            String safeExt  = FileValidator.videoExtension(magic);
             String finalName = UUID.randomUUID() + ".mp4";
-            Path   tmpPath   = dir.resolve(UUID.randomUUID() + origExt);
-            Files.copy(file.getInputStream(), tmpPath);
+            Path   tmpPath   = dir.resolve(UUID.randomUUID() + safeExt);
+            file.transferTo(tmpPath);
             try {
                 Path outPath = dir.resolve(finalName);
                 int  exit    = new ProcessBuilder(
@@ -244,17 +234,22 @@ public class HighlightController {
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-            } catch (Exception ignored) { /* ffmpeg absent — fallback */ }
-            // Fallback: save original if ffmpeg not available
-            String fallbackName = UUID.randomUUID() + origExt;
+            } catch (Exception ignored) { /* ffmpeg absent — fallback to original */ }
+            String fallbackName = UUID.randomUUID() + safeExt;
             Files.move(tmpPath, dir.resolve(fallbackName));
             return ResponseEntity.ok(ApiResponse.ok(Map.of("url", "/uploads/" + fallbackName)));
         }
 
-        // Image: save as-is
-        String filename = UUID.randomUUID() + origExt;
-        Files.copy(file.getInputStream(), dir.resolve(filename));
+        // Image: extension déterminée par magic bytes.
+        String filename = UUID.randomUUID() + FileValidator.imageExtension(magic);
+        file.transferTo(dir.resolve(filename));
         return ResponseEntity.ok(ApiResponse.ok(Map.of("url", "/uploads/" + filename)));
+    }
+
+    private static byte[] readMagicBytes(InputStream is) throws IOException {
+        try (is) {
+            return is.readNBytes(FileValidator.MAGIC_BYTES_LENGTH);
+        }
     }
 
     // ── Request records ───────────────────────────────────────────────────────

@@ -7,8 +7,9 @@ import org.elas.momentum.activity.application.dto.ActivityMessageResult;
 import org.elas.momentum.activity.application.dto.ActivityResult;
 import org.elas.momentum.activity.application.dto.CreateActivityCommand;
 import org.elas.momentum.activity.application.dto.SendMessageCommand;
-import org.elas.momentum.activity.application.usecase.ActivityChatService;
 import org.elas.momentum.activity.domain.port.in.CompleteActivityUseCase;
+import org.elas.momentum.activity.domain.port.in.GetMessagesUseCase;
+import org.elas.momentum.activity.domain.port.in.SendMessageUseCase;
 import org.elas.momentum.activity.domain.port.in.CreateActivityUseCase;
 import org.elas.momentum.activity.domain.port.in.DeleteActivityUseCase;
 import org.elas.momentum.activity.domain.port.in.GetActivityUseCase;
@@ -28,23 +29,26 @@ import java.util.List;
 @Tag(name = "Activities", description = "Sessions sportives")
 public class ActivityController {
 
-    private final CreateActivityUseCase  createActivityUseCase;
-    private final JoinActivityUseCase    joinActivityUseCase;
-    private final GetActivityUseCase     getActivityUseCase;
-    private final ActivityChatService    chatService;
+    private final CreateActivityUseCase   createActivityUseCase;
+    private final JoinActivityUseCase     joinActivityUseCase;
+    private final GetActivityUseCase      getActivityUseCase;
+    private final SendMessageUseCase      sendMessageUseCase;
+    private final GetMessagesUseCase      getMessagesUseCase;
     private final CompleteActivityUseCase completeActivityUseCase;
-    private final DeleteActivityUseCase  deleteActivityUseCase;
+    private final DeleteActivityUseCase   deleteActivityUseCase;
 
     public ActivityController(CreateActivityUseCase createActivityUseCase,
                               JoinActivityUseCase joinActivityUseCase,
                               GetActivityUseCase getActivityUseCase,
-                              ActivityChatService chatService,
+                              SendMessageUseCase sendMessageUseCase,
+                              GetMessagesUseCase getMessagesUseCase,
                               CompleteActivityUseCase completeActivityUseCase,
                               DeleteActivityUseCase deleteActivityUseCase) {
-        this.createActivityUseCase  = createActivityUseCase;
-        this.joinActivityUseCase    = joinActivityUseCase;
-        this.getActivityUseCase     = getActivityUseCase;
-        this.chatService            = chatService;
+        this.createActivityUseCase   = createActivityUseCase;
+        this.joinActivityUseCase     = joinActivityUseCase;
+        this.getActivityUseCase      = getActivityUseCase;
+        this.sendMessageUseCase      = sendMessageUseCase;
+        this.getMessagesUseCase      = getMessagesUseCase;
         this.completeActivityUseCase = completeActivityUseCase;
         this.deleteActivityUseCase   = deleteActivityUseCase;
     }
@@ -143,7 +147,7 @@ public class ActivityController {
             @Valid @RequestBody SendMessageCommand command) {
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok(chatService.send(activityId, userId, command)));
+                .body(ApiResponse.ok(sendMessageUseCase.send(activityId, userId, command)));
     }
 
     @GetMapping("/{activityId}/messages")
@@ -152,6 +156,6 @@ public class ActivityController {
             @PathVariable String activityId,
             @RequestParam(defaultValue = "50") int limit) {
 
-        return ResponseEntity.ok(ApiResponse.ok(chatService.getMessages(activityId, Math.min(limit, 100))));
+        return ResponseEntity.ok(ApiResponse.ok(getMessagesUseCase.getMessages(activityId, Math.min(limit, 100))));
     }
 }

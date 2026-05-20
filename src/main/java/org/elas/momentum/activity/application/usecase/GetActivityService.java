@@ -13,6 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -26,16 +28,21 @@ public class GetActivityService implements GetActivityUseCase {
         this.userModuleAPI = userModuleAPI;
     }
 
-    /** Enriches participant DTOs with resolved first/last names. */
+    /** Enriches participant DTOs — 1 batch query instead of N individual lookups. */
     private ActivityResult withParticipantNames(ActivityResult result) {
+        Set<String> ids = result.participants().stream()
+                .map(ActivityResult.ParticipantDto::userId)
+                .collect(Collectors.toSet());
+        var profiles = userModuleAPI.findByIds(ids);
+
         var enriched = result.participants().stream()
                 .map(p -> {
-                    var summary = userModuleAPI.findById(p.userId());
+                    var s = profiles.get(p.userId());
                     return new ActivityResult.ParticipantDto(
                             p.userId(), p.joinedAt(),
-                            summary.map(s -> s.firstName()).orElse(null),
-                            summary.map(s -> s.lastName()).orElse(null),
-                            summary.map(s -> s.avatarUrl()).orElse(null));
+                            s != null ? s.firstName() : null,
+                            s != null ? s.lastName()  : null,
+                            s != null ? s.avatarUrl() : null);
                 })
                 .toList();
         return new ActivityResult(
