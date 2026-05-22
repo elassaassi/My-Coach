@@ -21,6 +21,10 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    // OS-level messages that signal a normal client disconnect, not a server error
+    private static final String BROKEN_PIPE      = "Broken pipe";
+    private static final String CONNECTION_RESET  = "Connection reset";
+
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleNotFound(NotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -63,7 +67,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IOException.class)
     public ResponseEntity<ApiResponse<Void>> handleIoException(IOException ex) {
         String msg = ex.getMessage();
-        if (msg != null && (msg.contains("Broken pipe") || msg.contains("Connection reset"))) {
+        if (msg != null && (msg.contains(BROKEN_PIPE) || msg.contains(CONNECTION_RESET))) {
             log.debug("Client disconnected: {}", msg);
             return ResponseEntity.ok(ApiResponse.ok(null));
         }
