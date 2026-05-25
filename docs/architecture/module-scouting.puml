@@ -1,0 +1,33 @@
+@startuml
+title <size:24>Scouting</size>
+
+set separator none
+top to bottom direction
+
+<style>
+  root {
+    BackgroundColor: #ffffff
+    FontColor: #444444
+  }
+</style>
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Component>
+
+System_Boundary("Modules_boundary", "Modules", $tags="") {
+  Container_Boundary("Modules.Modules_boundary", "Modules", $tags="") {
+    Component(Modules.Modules.Scouting, "Scouting", $techn="Module", $descr="", $tags="", $link="")
+    Component(Modules.Modules.Shared, "Shared", $techn="Module", $descr="", $tags="", $link="")
+    Component(Modules.Modules.Rating, "Rating", $techn="Module", $descr="", $tags="", $link="")
+  }
+
+}
+
+Rel(Modules.Modules.Scouting, Modules.Modules.Rating, "listens to", $techn="", $tags="", $link="")
+Rel(Modules.Modules.Scouting, Modules.Modules.Shared, "depends on", $techn="", $tags="", $link="")
+Rel(Modules.Modules.Rating, Modules.Modules.Shared, "depends on", $techn="", $tags="", $link="")
+
+SHOW_LEGEND(true)
+hide stereotypes
+@enduml

@@ -1,0 +1,51 @@
+@startuml
+title <size:24>Modules</size>
+
+set separator none
+top to bottom direction
+
+<style>
+  root {
+    BackgroundColor: #ffffff
+    FontColor: #444444
+  }
+</style>
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Component>
+
+System_Boundary("Modules_boundary", "Modules", $tags="") {
+  Container_Boundary("Modules.Modules_boundary", "Modules", $tags="") {
+    Component(Modules.Modules.Scouting, "Scouting", $techn="Module", $descr="", $tags="", $link="")
+    Component(Modules.Modules.Shared, "Shared", $techn="Module", $descr="", $tags="", $link="")
+    Component(Modules.Modules.User, "User", $techn="Module", $descr="", $tags="", $link="")
+    Component(Modules.Modules.Activity, "Activity", $techn="Module", $descr="", $tags="", $link="")
+    Component(Modules.Modules.Coaching, "Coaching", $techn="Module", $descr="", $tags="", $link="")
+    Component(Modules.Modules.Config, "Config", $techn="Module", $descr="", $tags="", $link="")
+    Component(Modules.Modules.Highlight, "Highlight", $techn="Module", $descr="", $tags="", $link="")
+    Component(Modules.Modules.Matching, "Matching", $techn="Module", $descr="", $tags="", $link="")
+    Component(Modules.Modules.Messaging, "Messaging", $techn="Module", $descr="", $tags="", $link="")
+    Component(Modules.Modules.Rating, "Rating", $techn="Module", $descr="", $tags="", $link="")
+  }
+
+}
+
+Rel(Modules.Modules.Messaging, Modules.Modules.Shared, "depends on", $techn="", $tags="", $link="")
+Rel(Modules.Modules.Config, Modules.Modules.Shared, "depends on", $techn="", $tags="", $link="")
+Rel(Modules.Modules.Config, Modules.Modules.User, "uses", $techn="", $tags="", $link="")
+Rel(Modules.Modules.User, Modules.Modules.Shared, "depends on", $techn="", $tags="", $link="")
+Rel(Modules.Modules.User, Modules.Modules.Config, "uses", $techn="", $tags="", $link="")
+Rel(Modules.Modules.Matching, Modules.Modules.Shared, "depends on", $techn="", $tags="", $link="")
+Rel(Modules.Modules.Matching, Modules.Modules.User, "uses", $techn="", $tags="", $link="")
+Rel(Modules.Modules.Activity, Modules.Modules.Shared, "depends on", $techn="", $tags="", $link="")
+Rel(Modules.Modules.Activity, Modules.Modules.User, "uses", $techn="", $tags="", $link="")
+Rel(Modules.Modules.Scouting, Modules.Modules.Rating, "listens to", $techn="", $tags="", $link="")
+Rel(Modules.Modules.Scouting, Modules.Modules.Shared, "depends on", $techn="", $tags="", $link="")
+Rel(Modules.Modules.Coaching, Modules.Modules.Shared, "depends on", $techn="", $tags="", $link="")
+Rel(Modules.Modules.Highlight, Modules.Modules.Shared, "depends on", $techn="", $tags="", $link="")
+Rel(Modules.Modules.Rating, Modules.Modules.Shared, "depends on", $techn="", $tags="", $link="")
+
+SHOW_LEGEND(true)
+hide stereotypes
+@enduml

@@ -1,0 +1,33 @@
+@startuml
+title <size:24>Matching</size>
+
+set separator none
+top to bottom direction
+
+<style>
+  root {
+    BackgroundColor: #ffffff
+    FontColor: #444444
+  }
+</style>
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Component>
+
+System_Boundary("Modules_boundary", "Modules", $tags="") {
+  Container_Boundary("Modules.Modules_boundary", "Modules", $tags="") {
+    Component(Modules.Modules.Shared, "Shared", $techn="Module", $descr="", $tags="", $link="")
+    Component(Modules.Modules.User, "User", $techn="Module", $descr="", $tags="", $link="")
+    Component(Modules.Modules.Matching, "Matching", $techn="Module", $descr="", $tags="", $link="")
+  }
+
+}
+
+Rel(Modules.Modules.User, Modules.Modules.Shared, "depends on", $techn="", $tags="", $link="")
+Rel(Modules.Modules.Matching, Modules.Modules.Shared, "depends on", $techn="", $tags="", $link="")
+Rel(Modules.Modules.Matching, Modules.Modules.User, "uses", $techn="", $tags="", $link="")
+
+SHOW_LEGEND(true)
+hide stereotypes
+@enduml

@@ -270,11 +270,26 @@ Manifests K8s directs disponibles dans `k8s/` (namespace, app, postgres, redis, 
 
 ---
 
+## Documentation
+
+| Ressource | Lien |
+|-----------|------|
+| Documentation vivante | [`docs/README.md`](docs/README.md) |
+| ADRs (11 décisions) | [`docs/adr/README.md`](docs/adr/README.md) |
+| Diagrammes Modulith | [`docs/architecture/`](docs/architecture/) |
+| Règles de développement | [`CLAUDE.md`](CLAUDE.md) |
+| Swagger UI | `http://localhost:8080/swagger-ui.html` *(serveur démarré)* |
+| Couverture JaCoCo | `target/site/jacoco/index.html` *(après `./mvnw verify`)* |
+| Rapport PIT | `target/pit-reports/index.html` *(après `./mvnw clean test -P mutation`)* |
+
+---
+
 ## Roadmap
 
 | Phase | Contenu |
 |-------|---------|
 | **Phase 0** ✅ | 8 modules Modulith, JWT, OAuth2, JaCoCo, ELK, Helm |
-| **Phase 1** | Spring Cloud Gateway, Keycloak OIDC complet, notifications push |
-| **Phase 2** | Migration 8 microservices, Kafka events, Spring AI matching |
-| **Phase 3** | Mobile natif (Capacitor), marketplace partenaires, analytics |
+| **Phase 1** ✅ | rating, coaching, highlight, scouting — proScore, leaderboard, magic bytes upload |
+| **Phase 2** | Spring Cloud Gateway, Keycloak OIDC complet, notifications push |
+| **Phase 3** | Migration 8 microservices, Kafka events, Spring AI matching |
+| **Phase 4** | Mobile natif (Capacitor), marketplace partenaires, analytics |
